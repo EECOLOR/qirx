@@ -11,3 +11,10 @@ val testDependencies = Seq(
 
 lazy val `qirx` = project.in( file(".") )
   .settings(settings ++ testDependencies : _*)
+  .settings(
+    noJavaSourceIn(Compile),
+    noJavaSourceIn(Test)
+  )
+
+def noJavaSourceIn(configuration:Configuration) =
+  unmanagedSourceDirectories in configuration := Seq((scalaSource in configuration).value)
