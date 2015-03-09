@@ -3,7 +3,7 @@ package qirx.grammar
 import psp.api._
 import psp.std._
 
-sealed trait Element
+sealed trait Element extends NaturalHashEq
 
 object Element extends ElementOperations
 

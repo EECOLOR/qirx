@@ -103,19 +103,22 @@ object _02_Elements extends Documentation {
      |These are the elements that will contain other elements in the resulting grammar. You
      |are free to define any nonterminal element. Check the productions section of the
      |documentation to see how they are used.
-     |""".stripMargin - sideEffectExample {
-       case object MyNonterminal extends Nonterminal
-       val e: Element = MyNonterminal
+     | """.stripMargin - sideEffectExample {
+       case object Statement extends Nonterminal
+       val e: Element = Statement
      }
 
   """|## Terminals
      |
-     |These are the elements that will eventually be translated to sequences of characters. To
-     |clearly distinguish them from nonterminals we have the convention to write them with
-     |backticks and start their name with a lower case letter.
-     |""".stripMargin - sideEffectExample {
-       case object `myterminal` extends Terminal
-       val e: Element = `myterminal`
+     |These are the elements that will eventually be translated to sequences of characters.
+     |
+     |By convention we write terminals that will be translated to a fixed set of characters
+     |with backticks and in lower case. Terminals that will be translated to an arbitrary
+     |set of characters are written with standard convention.
+     | """.stripMargin - sideEffectExample {
+       case object `keyword` extends Terminal
+       case object Id extends Terminal
+       val e: (Element, Element) = (`keyword`, Id)
      }
    }
 }
