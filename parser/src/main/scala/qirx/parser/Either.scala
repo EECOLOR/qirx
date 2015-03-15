@@ -1,7 +1,7 @@
 package qirx.parser
 
 import psp.api._
-import psp.api.Api._
+import psp.std._
 
 sealed trait Either[+A, +B]
 

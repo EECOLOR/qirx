@@ -33,10 +33,8 @@ retult to a custom case class.
 def customConsume(characters: InvariantView[Char]): SplitView[Char] =
   characters.span(c => c == 'a' || c == 'b')
 
-case class CustomResult(content: String)
-
 def customToValue(consumed: View[Char]): CustomResult =
-  CustomResult(consumed.mkString(""))
+  CustomResult(consumed.force[String])
 
 characterParser =
   CharacterParser(
@@ -48,3 +46,30 @@ characterParser =
 - It returns a failure if the parser did not consume anything
 - When it consumes input it will return the value together with the unconsumed input
  
+### String parser
+
+We have supplied a string parser that can be used to match an exact string.
+ 
+```scala
+`abc` = CharacterParser.string("abc")
+```
+- It fails on input that does not start with the specified string
+- It returns the string with no remaining input if it consumed all characters
+- It returns the correct remaining input if it did not consume all characters
+## Choice parser
+
+This parser will try to parse input using all of the other parser.
+
+Below ...
+ 
+```scala
+choiceParser =
+  ChoiceParser(
+    parsers = Direct(`abc`, `abcd`),
+    toValue = identity[String]
+  )
+```
+- It throws an exception if no parsers were given during construction
+- It returns a failure if there none of the parsers match the input
+- It returns the correct value if one of the parsers matched the input
+- It returns multiple values if more than one matches the input

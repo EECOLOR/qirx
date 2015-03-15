@@ -1,28 +1,11 @@
 package documentation
 
 import psp.api._
-import psp.std._
-import org.qirx.littlespec.Specification
-import org.qirx.littlespec.fragments.Fragment
-import org.qirx.littlespec.io.Source
-import org.qirx.littlespec.macros.Location
-import qirx.parser.Parser
-import qirx.parser.Failure
-import qirx.parser.Result
-import qirx.parser.parsers.CharacterParser
-import qirx.parser.ExpectedInput
-import qirx.parser.InvalidInput
-import qirx.parser.Left
-import qirx.parser.Right
-import qirx.parser.Result
+import psp.std.{Failure => _, _}
+import qirx.parser._
+import qirx.parser.parsers._
 
-object _02_Parsers extends Specification {
-
-  /* required for the location macro of little-spec */
-  protected[this] val Seq = psp.std.scSeq
-
-  def sideEffectExample(code: => Unit)(implicit location: Location): Fragment =
-    createFragment(Source.codeAtLocation(location), { code ; success} )
+object _02_Parsers extends Documentation {
 
 """|#Parsers
    |
@@ -46,7 +29,8 @@ object _02_Parsers extends Specification {
        }
      }
 
-     var characterParser: CharacterParser[_] = null
+     case class CustomResult(content: String)
+     var characterParser: CharacterParser[CustomResult] = null
 
   """|## Character parser
      |
@@ -58,10 +42,8 @@ object _02_Parsers extends Specification {
        def customConsume(characters: InvariantView[Char]): SplitView[Char] =
          characters.span(c => c == 'a' || c == 'b')
 
-       case class CustomResult(content: String)
-
        def customToValue(consumed: View[Char]): CustomResult =
-         CustomResult(consumed.mkString(""))
+         CustomResult(consumed.force[String])
 
        characterParser =
          CharacterParser(
@@ -77,14 +59,55 @@ object _02_Parsers extends Specification {
        characterParser parse "c" is Left(InvalidInput)
      }
      "- When it consumes input it will return the value together with the unconsumed input\n " - {
-       characterParser parse "bac" match {
-         case Left(failed)   => failure("Expected success, got: " + failed)
-         case Right(results) =>
-           results.size is Size(1)
-           val result = results.head
-           result.value.toString is "CustomResult(ba)"
-           result.remaining.force is "c"
-       }
+       characterParser parse "bac" must beResult(CustomResult("ba") -> "c")
      }
-  }
+
+     var `abc`: Parser[String] = null
+
+  """|### String parser
+     |
+     |We have supplied a string parser that can be used to match an exact string.
+     | """.stripMargin - sideEffectExample {
+       `abc` = CharacterParser.string("abc")
+     }
+
+     "- It fails on input that does not start with the specified string" - {
+       `abc` parse "dabc" is Left(InvalidInput)
+     }
+     "- It returns the string with no remaining input if it consumed all characters" - {
+       `abc` parse "abc" must beResult("abc" -> "")
+     }
+     "- It returns the correct remaining input if it did not consume all characters" - {
+       `abc` parse "abcdef" must beResult("abc" -> "def")
+     }
+
+  val `abcd` = CharacterParser.string("abcd")
+  var choiceParser: Parser[String] = null
+
+  """|## Choice parser
+     |
+     |This parser will try to parse input using all of the other parser.
+     |
+     |Below ...
+     | """.stripMargin - sideEffectExample {
+       choiceParser =
+         ChoiceParser(
+           parsers = Direct(`abc`, `abcd`),
+           toValue = identity[String]
+         )
+     }
+     "- It throws an exception if no parsers were given during construction" - {
+       ChoiceParser(emptyValue[View[Parser[String]]], identity[String]) must throwA[Throwable]
+     }
+     "- It returns a failure if there none of the parsers match the input" - {
+       choiceParser parse "" is Left(ExpectedInput)
+       choiceParser parse "def" is Left(InvalidInput)
+     }
+     "- It returns the correct value if one of the parsers matched the input" - {
+       choiceParser parse "abce" must beResult("abc" -> "e")
+     }
+     "- It returns multiple values if more than one matches the input" - {
+       choiceParser parse "abcde" must beResult("abc" -> "de", "abcd" -> "e")
+     }
+   }
 }
