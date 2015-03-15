@@ -20,19 +20,38 @@ trait Documentation extends Specification {
   def sideEffectExample(code: => Unit)(implicit location: Location): Fragment =
     createFragment(Source.codeAtLocation(location), { code; success })
 
-  def beResult[A](expected: (A -> View[Char] with HasPreciseSize)*) =
+  def beResult[A](expected: (A -> View[Char] with HasPreciseSize)*)(implicit force: Enforcer[A]) =
     new Assertion[Either[Failure, View[Result[A]]]] {
       def assert(result: => Either[Failure, View[Result[A]]]) =
         result match {
           case Left(failed) => scala.Left("Expected success, got: " + failed)
           case Right(results) =>
-            results.force.size is Size(expected.size)
+            results.force.size is Size(expected.size) withMessage ("size is not expected: " + _)
+
             results zip expected foreach { case (result, expected) =>
-              val (value, remaining) = expected
-              result.value is value
-              result.remaining.force is remaining.force
+                val (value, remaining) = expected
+                force(result.value) is force(value) withMessage ("result is incorrect: " + _)
+                result.remaining.force is remaining.force withMessage("remaining is incorrect: " + _)
             }
             scala.Right(success)
         }
     }
+
+  trait Enforcer[A] {
+    def apply(a:A):A
+  }
+  trait LowerPriorityEnforcers {
+    implicit def any[A]:Enforcer[A] = new Enforcer[A] {
+      def apply(a:A):A = a
+    }
+  }
+  object Enforcer extends LowerPriorityEnforcers {
+    implicit def view[A](implicit force: Enforcer[A]):Enforcer[View[A]] = new Enforcer[View[A]] {
+      def apply(a:View[A]):View[A] = (a map force.apply).force
+    }
+  }
+
+  object View {
+    def apply[A](a: A*):View[A] = Direct(a: _*).force
+  }
 }

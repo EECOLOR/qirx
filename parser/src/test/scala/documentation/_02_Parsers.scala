@@ -2,6 +2,8 @@ package documentation
 
 import psp.api._
 import psp.std.{Failure => _, _}
+import psp.std.HashEq.universalEq
+import psp.std.StdEq._
 import qirx.parser._
 import qirx.parser.parsers._
 
@@ -17,8 +19,11 @@ object _02_Parsers extends Documentation {
    |The parsers correspond do the elements in grammer:
    |
    |- The character parser can be used to parse `Terminal` elements
-   |- ???
+   |- The choice parser can be used to parse `Choice` elements
+   |- The sequence parser can be used to parse `Sequence` elements
    | """.stripMargin - {
+
+     "[Note to self] Create property based tests for all parsers" - {}
 
   """|A parser is a type with the following signature
      | """.stripMargin - sideEffectExample {
@@ -29,7 +34,7 @@ object _02_Parsers extends Documentation {
        }
      }
 
-     case class CustomResult(content: String)
+     case class CustomResult(content: String) extends NaturalHashEq
      var characterParser: CharacterParser[CustomResult] = null
 
   """|## Character parser
@@ -88,7 +93,7 @@ object _02_Parsers extends Documentation {
      |
      |This parser will try to parse input using all of the other parser.
      |
-     |Below ...
+     |Below an example of a parser that gives an ambiguous result.
      | """.stripMargin - sideEffectExample {
        choiceParser =
          ChoiceParser(
@@ -96,7 +101,7 @@ object _02_Parsers extends Documentation {
            toValue = identity[String]
          )
      }
-     "- It throws an exception if no parsers were given during construction" - {
+     "Note that this parser throws an exception if no parsers were given during construction" - {
        ChoiceParser(emptyValue[View[Parser[String]]], identity[String]) must throwA[Throwable]
      }
      "- It returns a failure if there none of the parsers match the input" - {
@@ -106,8 +111,62 @@ object _02_Parsers extends Documentation {
      "- It returns the correct value if one of the parsers matched the input" - {
        choiceParser parse "abce" must beResult("abc" -> "e")
      }
-     "- It returns multiple values if more than one matches the input" - {
+     "- It returns multiple values if more than one matches the input\n " - {
        choiceParser parse "abcde" must beResult("abc" -> "de", "abcd" -> "e")
      }
+
+     var sequenceParser: Parser[View[String]] = null
+
+  """|## Sequence parser
+     |
+     |This parser consumes the input using the given sequence of other parsers. It will then
+     |convert to the specified result.
+     |
+     |Below a parser that is set up for ambiguity.
+     | """.stripMargin - sideEffectExample {
+       def takeExactly3(i: InvariantView[Char]): Split[Char] = {
+         val x @ Split(a, b) = i.splitAt(Index(3))
+         if (a.force.size == Size(3)) x
+         else Split(emptyValue[View[Char]], i)
+       }
+
+       val take3 = CharacterParser(takeExactly3, _.mkString(""))
+
+       val choice = ChoiceParser(Direct(`abc`, take3), identity[String])
+
+       sequenceParser =
+         SequenceParser(
+           parsers = Direct(choice, `abcd`),
+           toValue = identity[View[String]]
+         )
+     }
+
+     "Note that this parser throws an exception if no parsers were given during construction" - {
+       SequenceParser(emptyValue[View[Parser[String]]], identity[View[String]]) must throwA[Throwable]
+     }
+     "- It returns a failure when any of the given parsers returns a failure" - {
+       sequenceParser parse ""     is Left(ExpectedInput)
+       sequenceParser parse "d"    is Left(InvalidInput)
+       sequenceParser parse "abc"  is Left(ExpectedInput)
+       sequenceParser parse "abcd" is Left(InvalidInput)
+       "[Note to self] Add position information" - {}
+     }
+     "- It returns a result when all of the given parsers return a result" - {
+       val result1 = sequenceParser parse "abcabcd"
+       result1 must beResult(View("abc", "abcd") -> "", View("abc", "abcd") -> "")
+       val result2 = sequenceParser parse "123abcde"
+       result2 must beResult(View("123", "abcd") -> "e")
+     }
+     "- It correctly passes the remaining characters if they for some combination" - {
+       val parser = SequenceParser(
+         parsers = Direct(choiceParser, choiceParser),
+         toValue = identity[View[String]]
+       )
+       parser parse "abcabcd" must beResult(View("abc", "abc") -> "d", View("abc", "abcd") -> "")
+       parser parse "abcdabcd" must beResult(View("abcd", "abc") -> "d", View("abcd", "abcd") -> "")
+       parser parse "abcdabc" must beResult(View("abcd", "abc") -> "")
+       parser parse "abcabc" must beResult(View("abc", "abc") -> "")
+     }
    }
+
 }
