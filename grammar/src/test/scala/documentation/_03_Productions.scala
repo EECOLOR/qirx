@@ -43,7 +43,7 @@ object _03_Productions extends Documentation {
        // Create the productions
        object Productions extends Productions {
          Statement := Id ~ `(` ~ String ~ (`,` ~ String).* ~ `)`
-         String    := `"` ~ !`"` ~ `"`
+         String    := `"` ~ !`"` ~ `"` // "
        }
 
        withValue(Productions.productions)(
