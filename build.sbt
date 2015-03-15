@@ -4,8 +4,13 @@ lazy val `qirx` = project.in( file(".") )
 lazy val `qirx-grammar` = project.in( file("grammar") )
   .settings(commonSettings ++ testSettings : _*)
 
+lazy val `qirx-parser` = project.in( file("parser") )
+  .settings(commonSettings ++ testSettings : _*)
+  .dependsOn(`qirx-grammar`, github("EECOLOR", "scala-program-builder", "master"))
 
 //////// Common ////////
+
+//lazy val `psp-std` = github("paulp", "psp-std", "master")
 
 lazy val commonSettings = Seq(
   organization := "org.qirx",
@@ -22,10 +27,16 @@ def noJavaSourceIn(configuration:Configuration) =
 
 lazy val standardLibrarySettings = Seq(
             resolvers +=  "bintray/paulp" at "https://dl.bintray.com/paulp/maven",
-  libraryDependencies +=  "org.improving" %% "psp-std" % "0.5.5",
+  libraryDependencies +=  "org.improving" %% "psp-std" % "0.5.6-M7",
         scalacOptions += "-Yno-predef",
         scalacOptions += "-Yno-imports"
 )
+
+
+////////  Util  ////////
+
+def github(user: String, project: String, branch: String): RootProject =
+  RootProject(uri(s"git://github.com/$user/$project.git#$branch"))
 
 
 ////////  Test  ////////
