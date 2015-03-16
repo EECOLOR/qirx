@@ -30,4 +30,11 @@ object CharacterParser {
       toValue = _.force
     )
   }
+
+  def char(value: Char): CharacterParser[Char] = {
+    CharacterParser(
+      consume = _.span(_ == value),
+      toValue = _.head
+    )
+  }
 }

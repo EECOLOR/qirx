@@ -12,6 +12,10 @@ sealed trait Either[+A, +B] {
     case Left(value) => Left(value)
     case Right(value) => f(value)
   }
+  def fold[C](ifLeft: A => C, ifRight: B => C): C = this match {
+    case Left(value)  => ifLeft(value)
+    case Right(value) => ifRight(value)
+  }
 }
 
 case class Left[+A](value: A)  extends Either[A, Nothing]

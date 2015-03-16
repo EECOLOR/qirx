@@ -21,6 +21,8 @@ object _02_Parsers extends Documentation {
    |- The character parser can be used to parse `Terminal` elements
    |- The choice parser can be used to parse `Choice` elements
    |- The sequence parser can be used to parse `Sequence` elements
+   |- the not parser can used to parse `Attributed.not` elements
+   |- ???
    | """.stripMargin - {
 
      "[Note to self] Create property based tests for all parsers" - {}
@@ -86,6 +88,25 @@ object _02_Parsers extends Documentation {
        `abc` parse "abcdef" must beResult("abc" -> "def")
      }
 
+     var `a`: Parser[Char] = null // "
+
+  """|### Single character parser
+     |
+     |We have supplied a character parser that can be used to match an exact string.
+     | """.stripMargin - sideEffectExample {
+       `a` = CharacterParser.char('a')
+     }
+
+     "- It fails on input that does not start with the specified character" - {
+       `a` parse "b" is Left(InvalidInput)
+     }
+     "- It returns the character with no remaining input if it consumed all characters" - {
+       `a` parse "a" must beResult('a' -> "")
+     }
+     "- It returns the correct remaining input if it did not consume all characters" - {
+       `a` parse "abc" must beResult('a' -> "bc")
+     }
+
   val `abcd` = CharacterParser.string("abcd")
   var choiceParser: Parser[String] = null
 
@@ -114,6 +135,7 @@ object _02_Parsers extends Documentation {
      "- It returns multiple values if more than one matches the input\n " - {
        choiceParser parse "abcde" must beResult("abc" -> "de", "abcd" -> "e")
      }
+     "nested choices" - {}
 
      var sequenceParser: Parser[View[String]] = null
 
@@ -167,6 +189,33 @@ object _02_Parsers extends Documentation {
        parser parse "abcdabc" must beResult(View("abcd", "abc") -> "")
        parser parse "abcabc" must beResult(View("abc", "abc") -> "")
      }
-   }
 
+     var notParser: Parser[String] = null
+
+  """|## Not parser
+     |
+     |This consumes input that the underlying parser did not accept.
+     |
+     |Below a parser that consumes anything but the `x` character.
+     | """.stripMargin - sideEffectExample {
+       notParser =
+         NotParser(
+           underlying = CharacterParser.char('x'),
+           toValue    = _.force[String]
+         )
+     }
+     "- It will return a failure if the input is empty" - {
+       notParser parse "" is Left(ExpectedInput)
+     }
+     "- It will not consume anything if the underlying parser consumed something" - {
+       notParser parse "x" must beResult("" -> "x")
+     }
+     "- It consumes if the underlying parser fails to do so" - {
+       notParser parse "yyy" must beResult("yyy" -> "")
+     }
+     "- It stops consuming as soon as the underlying parser starts to consume" - {
+       notParser parse "yyyxxx" must beResult("yyy" -> "xxx")
+     }
+     "underlying is a choice" - {}
+   }
 }
