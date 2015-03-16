@@ -50,8 +50,4 @@ trait Documentation extends Specification {
       def apply(a:View[A]):View[A] = (a map force.apply).force
     }
   }
-
-  object View {
-    def apply[A](a: A*):View[A] = Direct(a: _*).force
-  }
 }

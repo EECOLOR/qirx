@@ -126,7 +126,8 @@ Note that this parser throws an exception if no parsers were given during constr
 - It correctly passes the remaining characters if they for some combination
 ## Not parser
 
-This consumes input that the underlying parser did not accept.
+This consumes input that the underlying parser did not accept. Note that it completely
+ignores the successful result of the underlying parser.
 
 Below a parser that consumes anything but the `x` character.
  
@@ -141,6 +142,19 @@ notParser =
 - It will not consume anything if the underlying parser consumed something
 - It consumes if the underlying parser fails to do so
 - It stops consuming as soon as the underlying parser starts to consume
-underlying is a choice
-> Pending: TODO
+## Zero or one parser
 
+This parser tries the underlying parser on the input
+
+Below a parser that tries the underlying parser, but will not fail if it fails.
+ 
+```scala
+zeroOrOneParser =
+  ZeroOrOneParser(
+    underlying = choiceParser,
+    toValue    = identity[Option[String]]
+  )
+```
+- It will not return an error if no input is available
+- It will return the correct remaining characters on a mismatch
+- It returns the results of the parser on a match

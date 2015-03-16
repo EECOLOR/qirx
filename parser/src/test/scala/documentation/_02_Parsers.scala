@@ -175,26 +175,27 @@ object _02_Parsers extends Documentation {
      }
      "- It returns a result when all of the given parsers return a result" - {
        val result1 = sequenceParser parse "abcabcd"
-       result1 must beResult(View("abc", "abcd") -> "", View("abc", "abcd") -> "")
+       result1 must beResult(newView("abc", "abcd") -> "", newView("abc", "abcd") -> "")
        val result2 = sequenceParser parse "123abcde"
-       result2 must beResult(View("123", "abcd") -> "e")
+       result2 must beResult(newView("123", "abcd") -> "e")
      }
      "- It correctly passes the remaining characters if they for some combination" - {
        val parser = SequenceParser(
          parsers = Direct(choiceParser, choiceParser),
          toValue = identity[View[String]]
        )
-       parser parse "abcabcd" must beResult(View("abc", "abc") -> "d", View("abc", "abcd") -> "")
-       parser parse "abcdabcd" must beResult(View("abcd", "abc") -> "d", View("abcd", "abcd") -> "")
-       parser parse "abcdabc" must beResult(View("abcd", "abc") -> "")
-       parser parse "abcabc" must beResult(View("abc", "abc") -> "")
+       parser parse "abcabcd"  must beResult(newView("abc", "abc")  -> "d", newView("abc", "abcd") -> "")
+       parser parse "abcdabcd" must beResult(newView("abcd", "abc") -> "d", newView("abcd", "abcd") -> "")
+       parser parse "abcdabc"  must beResult(newView("abcd", "abc") -> "")
+       parser parse "abcabc"   must beResult(newView("abc", "abc")  -> "")
      }
 
      var notParser: Parser[String] = null
 
   """|## Not parser
      |
-     |This consumes input that the underlying parser did not accept.
+     |This consumes input that the underlying parser did not accept. Note that it completely
+     |ignores the successful result of the underlying parser.
      |
      |Below a parser that consumes anything but the `x` character.
      | """.stripMargin - sideEffectExample {
@@ -216,6 +217,31 @@ object _02_Parsers extends Documentation {
      "- It stops consuming as soon as the underlying parser starts to consume" - {
        notParser parse "yyyxxx" must beResult("yyy" -> "xxx")
      }
-     "underlying is a choice" - {}
+
+     var zeroOrOneParser: Parser[Option[String]] = null
+
+  """|## Zero or one parser
+     |
+     |This parser tries the underlying parser on the input
+     |
+     |Below a parser that tries the underlying parser, but will not fail if it fails.
+     | """.stripMargin - sideEffectExample {
+       zeroOrOneParser =
+         ZeroOrOneParser(
+           underlying = choiceParser,
+           toValue    = identity[Option[String]]
+         )
+     }
+     "- It will not return an error if no input is available" - {
+       val expected: Option[String] = None
+       zeroOrOneParser parse "" must beResult(expected -> "")
+     }
+     "- It will return the correct remaining characters on a mismatch" - {
+       val expected: Option[String] = None
+       zeroOrOneParser parse "1" must beResult(expected -> "1")
+     }
+     "- It returns the results of the parser on a match" - {
+       zeroOrOneParser parse "abcd" must beResult(Option("abc") -> "d", Option("abcd") -> "")
+     }
    }
 }

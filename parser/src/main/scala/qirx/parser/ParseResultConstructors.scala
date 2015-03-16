@@ -8,4 +8,6 @@ trait ParseResultConstructors {
 
   def success[A](value: A, remaining: View[Char]): Failure | View[Result[A]] =
     Right(Direct(Result(value, remaining.force)))
+
+  def newView[A](a: A *): View[A] = Direct(a : _*).force
 }

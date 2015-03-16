@@ -12,8 +12,7 @@ case class NotParser[A, __](
     if (input.isEmpty) Left(ExpectedInput)
     else {
 
-      // I have no clue if this can be solved differently using a more functional
-      // style
+      // We are using a manual fold left here
       var remaining = input
 
       val consumed =
