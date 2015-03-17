@@ -158,3 +158,22 @@ zeroOrOneParser =
 - It will not return an error if no input is available
 - It will return the correct remaining characters on a mismatch
 - It returns the results of the parser on a match
+## Zero or more parser
+
+This repeats the underlying parser zero or more times.
+
+Below...
+ 
+```scala
+zeroOrMoreParser =
+  ZeroOrMoreParser(
+    underlying = choiceParser,
+    toValue    = identity[View[String]]
+  )
+```
+- It will not return an error if no input is available
+- It returns all remaining input if the underlying parser failed
+- It executes the parser multiple times and be as greedy as it can be
+[Note to self] think this through (see the above comment)
+> Pending: TODO
+

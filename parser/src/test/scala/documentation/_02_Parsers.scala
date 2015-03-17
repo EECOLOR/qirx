@@ -243,5 +243,35 @@ object _02_Parsers extends Documentation {
      "- It returns the results of the parser on a match" - {
        zeroOrOneParser parse "abcd" must beResult(Option("abc") -> "d", Option("abcd") -> "")
      }
+
+     var zeroOrMoreParser: Parser[View[String]] = null
+
+  """|## Zero or more parser
+     |
+     |This repeats the underlying parser zero or more times.
+     |
+     |Below...
+     | """.stripMargin - sideEffectExample {
+       zeroOrMoreParser =
+         ZeroOrMoreParser(
+           underlying = choiceParser,
+           toValue    = identity[View[String]]
+         )
+     }
+     "- It will not return an error if no input is available" - {
+       zeroOrMoreParser parse "" must beResult(newView[String]() -> "")
+     }
+     "- It returns all remaining input if the underlying parser failed" - {
+       zeroOrMoreParser parse "a" must beResult(newView[String]() -> "a")
+       zeroOrMoreParser parse "abcde" must beResult(newView("abc") -> "de", newView("abcd") -> "e")
+     }
+     "- It executes the parser multiple times and be as greedy as it can be" - {
+       zeroOrMoreParser parse "abcdabcd" must beResult(
+         //This result is discarded newView("abc") -> "dabcd",
+         newView("abcd", "abc") -> "d",
+         newView("abcd", "abcd") -> ""
+       )
+       "[Note to self] think this through (see the above comment)" - todo
+     }
    }
 }
