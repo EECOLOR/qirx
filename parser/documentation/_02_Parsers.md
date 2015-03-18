@@ -13,8 +13,10 @@ The parsers correspond do the elements in grammer:
 - The character parser can be used to parse `Terminal` elements
 - The choice parser can be used to parse `Choice` elements
 - The sequence parser can be used to parse `Sequence` elements
-- the not parser can used to parse `Attributed.not` elements
-- ???
+- The not parser can be used to parse `Attributed.not` elements
+- The zero or one parser can be used to parse `Attributed.zeroOrOne` elements
+- The zero or more parser can be used to parse `Attributed.zeroOrMore` elements
+- The one or more parser can be used to parse `Attributed.zeroOrOne` elements
  
 [Note to self] Create property based tests for all parsers
 > Pending: TODO
@@ -162,7 +164,7 @@ zeroOrOneParser =
 
 This repeats the underlying parser zero or more times.
 
-Below...
+Below a parser that never fails and executes the underlying parser as often as it can.
  
 ```scala
 zeroOrMoreParser =
@@ -177,3 +179,20 @@ zeroOrMoreParser =
 [Note to self] think this through (see the above comment)
 > Pending: TODO
 
+## One or more parser
+
+Repeats the underlying parser at least one time
+
+This parser that consumes the underlying input at least once
+ 
+```scala
+oneOrMoreParser =
+  OneOrMoreParser(
+    underlying = choiceParser,
+    toValue    = identity[View[String]]
+  )
+```
+- It should return a failure when presented with no input
+- It should report a failure when the underlying parser fails
+- It succeeds if the underlying parser consumed at least once
+- It succeeds if the underlying parser can consume multiple times
