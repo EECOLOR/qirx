@@ -10,10 +10,10 @@ case class CharacterParser[A](
 ) extends Parser[A] {
 
   def parse(input: Input): Failure | View[Result[A]] =
-    if (input.isEmpty) failure(ExpectedInput)
+    if (input.isEmpty) failure(ExpectedInput(input))
     else {
       val SplitInput(consumed, remaining) = consume(input)
-      if (consumed.isEmpty) failure(InvalidInput)
+      if (consumed.isEmpty) failure(InvalidInput(input))
       else success(toValue(consumed), remaining)
     }
 }

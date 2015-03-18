@@ -1,6 +1,8 @@
 package qirx.parser
 
-trait Failure
+trait Failure {
+  def input: Input
+}
 
-case object ExpectedInput extends Failure
-case object InvalidInput  extends Failure
+case class ExpectedInput(input: Input) extends Failure
+case class InvalidInput (input: Input) extends Failure

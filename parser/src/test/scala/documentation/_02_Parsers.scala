@@ -62,10 +62,10 @@ object _02_Parsers extends Documentation {
      }
 
      "- It returns a failure on empty input" - {
-       characterParser parse "" is Left(ExpectedInput)
+       characterParser parse "" must beFailure[ExpectedInput](at = 0, input = "")
      }
      "- It returns a failure if the parser did not consume anything" - {
-       characterParser parse "c" is Left(InvalidInput)
+       characterParser parse "c" must beFailure[InvalidInput](at = 0, input = "c")
      }
      "- When it consumes input it will return the value together with the unconsumed input\n " - {
        characterParser parse "bac" must beResult(CustomResult("ba") -> (2 -> "c"))
@@ -81,7 +81,7 @@ object _02_Parsers extends Documentation {
      }
 
      "- It fails on input that does not start with the specified string" - {
-       `abc` parse "dabc" is Left(InvalidInput)
+       `abc` parse "dabc" must beFailure[InvalidInput](at = 0, input = "dabc")
      }
      "- It returns the string with no remaining input if it consumed all characters" - {
        `abc` parse "abc" must beResult("abc" -> (3 -> ""))
@@ -100,7 +100,7 @@ object _02_Parsers extends Documentation {
      }
 
      "- It fails on input that does not start with the specified character" - {
-       `a` parse "b" is Left(InvalidInput)
+       `a` parse "b" must beFailure[InvalidInput](at = 0, input = "b")
      }
      "- It returns the character with no remaining input if it consumed all characters" - {
        `a` parse "a" must beResult('a' -> (1 -> ""))
@@ -128,8 +128,8 @@ object _02_Parsers extends Documentation {
        ChoiceParser(emptyValue[View[Parser[String]]], identity[String]) must throwA[Throwable]
      }
      "- It returns a failure if there none of the parsers match the input" - {
-       choiceParser parse "" is Left(ExpectedInput)
-       choiceParser parse "def" is Left(InvalidInput)
+       choiceParser parse ""    must beFailure[ExpectedInput](at = 0, input = "")
+       choiceParser parse "def" must beFailure[InvalidInput] (at = 0, input = "def")
      }
      "- It returns the correct value if one of the parsers matched the input" - {
        choiceParser parse "abce" must beResult("abc" -> (3 -> "e"))
@@ -177,11 +177,10 @@ object _02_Parsers extends Documentation {
        SequenceParser(emptyValue[View[Parser[String]]], identity[View[String]]) must throwA[Throwable]
      }
      "- It returns a failure when any of the given parsers returns a failure" - {
-       sequenceParser parse ""     is Left(ExpectedInput)
-       sequenceParser parse "d"    is Left(InvalidInput)
-       sequenceParser parse "abc"  is Left(ExpectedInput)
-       sequenceParser parse "abcd" is Left(InvalidInput)
-       "[Note to self] Add position information" - {}
+       sequenceParser parse ""     must beFailure[ExpectedInput](at = 0, input = "")
+       sequenceParser parse "d"    must beFailure[InvalidInput ](at = 0, input = "d")
+       sequenceParser parse "abc"  must beFailure[ExpectedInput](at = 3, input = "")
+       sequenceParser parse "abcd" must beFailure[InvalidInput ](at = 3, input = "d")
      }
      "- It returns a result when all of the given parsers return a result" - {
        val result1 = sequenceParser parse "abcabcd"
@@ -216,7 +215,7 @@ object _02_Parsers extends Documentation {
          )
      }
      "- It will return a failure if the input is empty" - {
-       notParser parse "" is Left(ExpectedInput)
+       notParser parse "" must beFailure[ExpectedInput](at = 0, input = "")
      }
      "- It will not consume anything if the underlying parser consumed something" - {
        notParser parse "x" must beResult("" -> (0 -> "x"))
@@ -299,10 +298,10 @@ object _02_Parsers extends Documentation {
          )
      }
      "- It should return a failure when presented with no input" - {
-       oneOrMoreParser parse "" is Left(ExpectedInput)
+       oneOrMoreParser parse "" must beFailure[ExpectedInput](at = 0, input = "")
      }
      "- It should report a failure when the underlying parser fails" - {
-       oneOrMoreParser parse "a" is Left(InvalidInput)
+       oneOrMoreParser parse "a" must beFailure[InvalidInput](at = 0, input = "a")
      }
      "- It succeeds if the underlying parser consumed at least once" - {
        oneOrMoreParser parse  "abc"  must beResult(newView("abc") -> (3 -> "" ))

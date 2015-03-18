@@ -9,7 +9,7 @@ case class NotParser[A, __](
   toValue: Input => A) extends Parser[A] {
 
   def parse(input: Input): Failure | View[Result[A]] = {
-    if (input.isEmpty) Left(ExpectedInput)
+    if (input.isEmpty) Left(ExpectedInput(input))
     else {
 
       // We are using a manual fold left here

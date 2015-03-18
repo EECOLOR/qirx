@@ -30,14 +30,36 @@ trait Documentation extends Specification {
             results.force.size is Size(expected.size) withMessage ("size is not expected: " + _)
 
             results zip expected foreach { case (result, expected) =>
-                val (value, (position, remaining)) = expected
-                force(result.value) is force(value) withMessage ("result is incorrect: " + _)
-                result.remaining.underlying.force is remaining.underlying.force withMessage("remaining is incorrect: " + _)
-                result.remaining.position is position withMessage ("position is incorrect: " + _)
+
+                val (eValue, (ePosition, Input(eRemaining, 0)))  = expected
+                val Result(rValue, Input(rRemaining, rPosition)) = result
+
+                force(rValue)    is force(eValue)    withMessage ("result is incorrect: " + _)
+                rRemaining.force is eRemaining.force withMessage ("remaining is incorrect: " + _)
+                rPosition        is ePosition        withMessage ("position is incorrect: " + _)
             }
+
             scala.Right(success)
         }
     }
+
+  def beFailure[T <: Failure : CTag](at: Long, input: Input) =
+    new Assertion[Either[Failure, _]] {
+    def assert(result: => Either[Failure, _]) = {
+      result match {
+        case Left(failed) =>
+          failed must beAnInstanceOf[T]
+
+          val Input(fInput, fPosition) = failed.input
+          val Input(eInput, 0) = input
+
+          fInput.force is eInput.force withMessage ("input is incorrect: " + _)
+          fPosition    is at           withMessage ("position is incorrect: " + _)
+          scala.Right(success)
+        case Right(results) => scala.Left("Expected failure, got: " + results)
+      }
+    }
+  }
 
   trait Enforcer[A] {
     def apply(a:A):A

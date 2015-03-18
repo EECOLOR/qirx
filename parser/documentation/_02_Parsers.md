@@ -27,7 +27,7 @@ A parser is a type with the following signature
 import qirx.parser.{Either => |}
 type ??? = Any
 val parser = new Parser[???] {
-  def parse(input: InvariantView[Char]): Failure | View[Result[???]] = ???
+  def parse(input: Input): Failure | View[Result[???]] = ???
 }
 ```
 ## Character parser
@@ -38,11 +38,11 @@ Below a simple definition that consumes any 'a' or 'b' character and converts it
 retult to a custom case class.
  
 ```scala
-def customConsume(characters: InvariantView[Char]): SplitView[Char] =
+def customConsume(characters: Input): SplitInput =
   characters.span(c => c == 'a' || c == 'b')
 
-def customToValue(consumed: View[Char]): CustomResult =
-  CustomResult(consumed.force[String])
+def customToValue(consumed: Input): CustomResult =
+  CustomResult(consumed.underlying.force[String])
 
 characterParser =
   CharacterParser(
@@ -101,10 +101,10 @@ convert to the specified result.
 Below a parser that is set up for ambiguity.
  
 ```scala
-def takeExactly3(i: InvariantView[Char]): Split[Char] = {
-  val x @ Split(a, b) = i.splitAt(Index(3))
-  if (a.force.size == Size(3)) x
-  else Split(emptyValue[View[Char]], i)
+def takeExactly3(input: Input): SplitInput = {
+  val result @ SplitInput(consumed, _) = input.splitAt(Precise(3))
+  if (consumed.size == Size(3)) result
+  else SplitInput(Input.empty, input)
 }
 
 val take3 = CharacterParser(takeExactly3, _.mkString(""))
@@ -119,9 +119,6 @@ sequenceParser =
 ```
 Note that this parser throws an exception if no parsers were given during construction
 - It returns a failure when any of the given parsers returns a failure
-[Note to self] Add position information
-> Pending: TODO
-
 - It returns a result when all of the given parsers return a result
 - It correctly passes the remaining characters if they for some combination
 ## Not parser
@@ -135,7 +132,7 @@ Below a parser that consumes anything but the `x` character.
 notParser =
   NotParser(
     underlying = CharacterParser.char('x'),
-    toValue    = _.force[String]
+    toValue    = _.underlying.force[String]
   )
 ```
 - It will return a failure if the input is empty
