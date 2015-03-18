@@ -1,3 +1,3 @@
 package qirx
 
-package object parser extends Aliases with ParseResultConstructors
+package object parser extends Aliases with Constructors
