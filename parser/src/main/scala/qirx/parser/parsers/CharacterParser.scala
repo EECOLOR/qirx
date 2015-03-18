@@ -5,15 +5,16 @@ import psp.api._
 import psp.std.{ Failure => _, _ }
 
 case class CharacterParser[A](
-  consume: InvariantView[Char] => Split[Char] /* TODO: this should be SplitView, but that has no unapply */ ,
-  toValue: InvariantView[Char] => A) extends Parser[A] {
+  consume: Input => SplitInput,
+  toValue: Input => A
+) extends Parser[A] {
 
-  def parse(input: InvariantView[Char]): Failure | View[Result[A]] =
+  def parse(input: Input): Failure | View[Result[A]] =
     if (input.isEmpty) failure(ExpectedInput)
     else {
-      val Split(consumed, remaining) = consume(input)
+      val SplitInput(consumed, remaining) = consume(input)
       if (consumed.isEmpty) failure(InvalidInput)
-      else success(toValue(consumed.force), remaining)
+      else success(toValue(consumed), remaining)
     }
 }
 
@@ -24,10 +25,10 @@ object CharacterParser {
     CharacterParser(
       consume = { input =>
         val consumed = input.take(size)
-        if (consumed.force == value.force) Split(consumed, input.drop(size))
-        else Split(emptyValue[View[Char]], input)
+        if (consumed.underlying.force == value.force) SplitInput(consumed, input.drop(size))
+        else SplitInput(Input.empty, input)
       },
-      toValue = _.force
+      toValue = _.underlying.force
     )
   }
 

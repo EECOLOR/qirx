@@ -9,7 +9,7 @@ case class ZeroOrOneParser[A, B](
   toValue: Option[A] => B
 ) extends Parser[B] {
 
-  def parse(input: InvariantView[Char]): Failure | View[Result[B]] = {
+  def parse(input: Input): Failure | View[Result[B]] = {
     val result =
       (underlying parse input).fold(
         ifLeft  = _       => newView(Result(toValue(None), input)),

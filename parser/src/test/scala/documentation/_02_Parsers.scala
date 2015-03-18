@@ -34,7 +34,7 @@ object _02_Parsers extends Documentation {
        import qirx.parser.{Either => |}
        type ??? = Any
        val parser = new Parser[???] {
-         def parse(input: InvariantView[Char]): Failure | View[Result[???]] = ???
+         def parse(input: Input): Failure | View[Result[???]] = ???
        }
      }
 
@@ -48,11 +48,11 @@ object _02_Parsers extends Documentation {
      |Below a simple definition that consumes any 'a' or 'b' character and converts its
      |retult to a custom case class.
      | """.stripMargin - sideEffectExample {
-       def customConsume(characters: InvariantView[Char]): SplitView[Char] =
+       def customConsume(characters: Input): SplitInput =
          characters.span(c => c == 'a' || c == 'b')
 
-       def customToValue(consumed: View[Char]): CustomResult =
-         CustomResult(consumed.force[String])
+       def customToValue(consumed: Input): CustomResult =
+         CustomResult(consumed.underlying.force[String])
 
        characterParser =
          CharacterParser(
@@ -68,7 +68,7 @@ object _02_Parsers extends Documentation {
        characterParser parse "c" is Left(InvalidInput)
      }
      "- When it consumes input it will return the value together with the unconsumed input\n " - {
-       characterParser parse "bac" must beResult(CustomResult("ba") -> "c")
+       characterParser parse "bac" must beResult(CustomResult("ba") -> (2 -> "c"))
      }
 
      var `abc`: Parser[String] = null
@@ -84,10 +84,10 @@ object _02_Parsers extends Documentation {
        `abc` parse "dabc" is Left(InvalidInput)
      }
      "- It returns the string with no remaining input if it consumed all characters" - {
-       `abc` parse "abc" must beResult("abc" -> "")
+       `abc` parse "abc" must beResult("abc" -> (3 -> ""))
      }
      "- It returns the correct remaining input if it did not consume all characters" - {
-       `abc` parse "abcdef" must beResult("abc" -> "def")
+       `abc` parse "abcdefg" must beResult("abc" -> (3 -> "defg"))
      }
 
      var `a`: Parser[Char] = null // "
@@ -103,10 +103,10 @@ object _02_Parsers extends Documentation {
        `a` parse "b" is Left(InvalidInput)
      }
      "- It returns the character with no remaining input if it consumed all characters" - {
-       `a` parse "a" must beResult('a' -> "")
+       `a` parse "a" must beResult('a' -> (1 -> ""))
      }
      "- It returns the correct remaining input if it did not consume all characters" - {
-       `a` parse "abc" must beResult('a' -> "bc")
+       `a` parse "abc" must beResult('a' -> (1 -> "bc"))
      }
 
   val `abcd` = CharacterParser.string("abcd")
@@ -132,18 +132,18 @@ object _02_Parsers extends Documentation {
        choiceParser parse "def" is Left(InvalidInput)
      }
      "- It returns the correct value if one of the parsers matched the input" - {
-       choiceParser parse "abce" must beResult("abc" -> "e")
+       choiceParser parse "abce" must beResult("abc" -> (3 -> "e"))
      }
      "- It returns multiple values if more than one matches the input\n " - {
-       choiceParser parse "abcde" must beResult("abc" -> "de", "abcd" -> "e")
+       choiceParser parse "abcde" must beResult("abc" -> (3 -> "de"), "abcd" -> (4 -> "e"))
      }
      "- It correctly handles nested choice parsers" - {
        val c = ChoiceParser(Direct(choiceParser, choiceParser), identity[String])
        c parse "abcde" must beResult(
-         "abc" -> "de",
-         "abcd" -> "e",
-         "abc" -> "de",
-         "abcd" -> "e"
+         "abc"  -> (3 -> "de"),
+         "abcd" -> (4 -> "e" ),
+         "abc"  -> (3 -> "de"),
+         "abcd" -> (4 -> "e" )
        )
      }
 
@@ -156,10 +156,10 @@ object _02_Parsers extends Documentation {
      |
      |Below a parser that is set up for ambiguity.
      | """.stripMargin - sideEffectExample {
-       def takeExactly3(i: InvariantView[Char]): Split[Char] = {
-         val x @ Split(a, b) = i.splitAt(Index(3))
-         if (a.force.size == Size(3)) x
-         else Split(emptyValue[View[Char]], i)
+       def takeExactly3(input: Input): SplitInput = {
+         val result @ SplitInput(consumed, _) = input.splitAt(Precise(3))
+         if (consumed.size == Size(3)) result
+         else SplitInput(Input.empty, input)
        }
 
        val take3 = CharacterParser(takeExactly3, _.mkString(""))
@@ -185,19 +185,19 @@ object _02_Parsers extends Documentation {
      }
      "- It returns a result when all of the given parsers return a result" - {
        val result1 = sequenceParser parse "abcabcd"
-       result1 must beResult(newView("abc", "abcd") -> "", newView("abc", "abcd") -> "")
+       result1 must beResult(newView("abc", "abcd") -> (7 -> ""), newView("abc", "abcd") ->(7 -> ""))
        val result2 = sequenceParser parse "123abcde"
-       result2 must beResult(newView("123", "abcd") -> "e")
+       result2 must beResult(newView("123", "abcd") -> (7 -> "e"))
      }
      "- It correctly passes the remaining characters if they for some combination" - {
        val parser = SequenceParser(
          parsers = Direct(choiceParser, choiceParser),
          toValue = identity[View[String]]
        )
-       parser parse "abcabcd"  must beResult(newView("abc", "abc")  -> "d", newView("abc", "abcd") -> "")
-       parser parse "abcdabcd" must beResult(newView("abcd", "abc") -> "d", newView("abcd", "abcd") -> "")
-       parser parse "abcdabc"  must beResult(newView("abcd", "abc") -> "")
-       parser parse "abcabc"   must beResult(newView("abc", "abc")  -> "")
+       parser parse "abcabcd"  must beResult(newView("abc" , "abc") -> (6 -> "d"), newView("abc" , "abcd") -> (7 -> ""))
+       parser parse "abcdabcd" must beResult(newView("abcd", "abc") -> (7 -> "d"), newView("abcd", "abcd") -> (8 -> ""))
+       parser parse "abcdabc"  must beResult(newView("abcd", "abc") -> (7 -> ""))
+       parser parse "abcabc"   must beResult(newView("abc" , "abc") -> (6 -> ""))
      }
 
      var notParser: Parser[String] = null
@@ -212,20 +212,20 @@ object _02_Parsers extends Documentation {
        notParser =
          NotParser(
            underlying = CharacterParser.char('x'),
-           toValue    = _.force[String]
+           toValue    = _.underlying.force[String]
          )
      }
      "- It will return a failure if the input is empty" - {
        notParser parse "" is Left(ExpectedInput)
      }
      "- It will not consume anything if the underlying parser consumed something" - {
-       notParser parse "x" must beResult("" -> "x")
+       notParser parse "x" must beResult("" -> (0 -> "x"))
      }
      "- It consumes if the underlying parser fails to do so" - {
-       notParser parse "yyy" must beResult("yyy" -> "")
+       notParser parse "yyy" must beResult("yyy" -> (3 -> ""))
      }
      "- It stops consuming as soon as the underlying parser starts to consume" - {
-       notParser parse "yyyxxx" must beResult("yyy" -> "xxx")
+       notParser parse "yyyxxx" must beResult("yyy" -> (3 -> "xxx"))
      }
 
      var zeroOrOneParser: Parser[Option[String]] = null
@@ -244,14 +244,14 @@ object _02_Parsers extends Documentation {
      }
      "- It will not return an error if no input is available" - {
        val expected: Option[String] = None
-       zeroOrOneParser parse "" must beResult(expected -> "")
+       zeroOrOneParser parse "" must beResult(expected -> (0 -> ""))
      }
      "- It will return the correct remaining characters on a mismatch" - {
        val expected: Option[String] = None
-       zeroOrOneParser parse "1" must beResult(expected -> "1")
+       zeroOrOneParser parse "1" must beResult(expected -> (0 -> "1"))
      }
      "- It returns the results of the parser on a match" - {
-       zeroOrOneParser parse "abcd" must beResult(Option("abc") -> "d", Option("abcd") -> "")
+       zeroOrOneParser parse "abcd" must beResult(Option("abc") -> (3 -> "d"), Option("abcd") -> (4 -> ""))
      }
 
      var zeroOrMoreParser: Parser[View[String]] = null
@@ -269,17 +269,17 @@ object _02_Parsers extends Documentation {
          )
      }
      "- It will not return an error if no input is available" - {
-       zeroOrMoreParser parse "" must beResult(newView[String]() -> "")
+       zeroOrMoreParser parse "" must beResult(newView[String]() -> (0 -> ""))
      }
      "- It returns all remaining input if the underlying parser failed" - {
-       zeroOrMoreParser parse "a"     must beResult(newView[String]() -> "a")
-       zeroOrMoreParser parse "abcde" must beResult(newView("abc") -> "de", newView("abcd") -> "e")
+       zeroOrMoreParser parse "a"     must beResult(newView[String]() -> (0 -> "a"))
+       zeroOrMoreParser parse "abcde" must beResult(newView("abc") -> (3 -> "de"), newView("abcd") -> (4 -> "e"))
      }
      "- It executes the parser multiple times and be as greedy as it can be" - {
        zeroOrMoreParser parse "abcdabcd" must beResult(
-         //This result is discarded newView("abc") -> "dabcd",
-         newView("abcd", "abc") -> "d",
-         newView("abcd", "abcd") -> ""
+         //This result is discarded newView("abc") -> (3 -> "dabcd"),
+         newView("abcd", "abc")  -> (7 -> "d"),
+         newView("abcd", "abcd") -> (8 -> "" )
        )
        "[Note to self] think this through (see the above comment)" - todo
      }
@@ -305,15 +305,18 @@ object _02_Parsers extends Documentation {
        oneOrMoreParser parse "a" is Left(InvalidInput)
      }
      "- It succeeds if the underlying parser consumed at least once" - {
-       oneOrMoreParser parse  "abc"  must beResult(newView("abc") -> "")
-       oneOrMoreParser parse "abce"  must beResult(newView("abc") -> "e")
-       oneOrMoreParser parse "abcde" must beResult(newView("abc") -> "de", newView("abcd") -> "e")
+       oneOrMoreParser parse  "abc"  must beResult(newView("abc") -> (3 -> "" ))
+       oneOrMoreParser parse "abce"  must beResult(newView("abc") -> (3 -> "e"))
+       oneOrMoreParser parse "abcde" must beResult(
+         newView("abc") -> (3 -> "de"),
+         newView("abcd") -> (4 -> "e")
+       )
      }
      "- It succeeds if the underlying parser can consume multiple times" - {
        oneOrMoreParser parse "abcdabcd" must beResult(
          //This result is discarded newView("abc") -> "dabcd",
-         newView("abcd", "abc") -> "d",
-         newView("abcd", "abcd") -> ""
+         newView("abcd", "abc")  -> (7 -> "d"),
+         newView("abcd", "abcd") -> (8 -> "" )
        )
      }
    }

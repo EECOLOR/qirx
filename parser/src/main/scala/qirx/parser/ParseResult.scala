@@ -14,7 +14,7 @@ case class ParseResult[A](result: Failure | A) {
 
 object ParseResult {
 
-  def withSingleResult[A](value: A, input: InvariantView[Char]): ParseResult[View[Result[A]]] =
+  def withSingleResult[A](value: A, input: Input): ParseResult[View[Result[A]]] =
     ParseResult(Right(Direct(Result(value, input))))
 
   /* The problem that some parsers presented was quite tricky. Each parser of the parsers that

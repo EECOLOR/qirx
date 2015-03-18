@@ -6,9 +6,9 @@ import psp.std.{ Failure => _, _ }
 
 case class NotParser[A, __](
   underlying: Parser[__],
-  toValue: InvariantView[Char] => A) extends Parser[A] {
+  toValue: Input => A) extends Parser[A] {
 
-  def parse(input: InvariantView[Char]): Failure | View[Result[A]] = {
+  def parse(input: Input): Failure | View[Result[A]] = {
     if (input.isEmpty) Left(ExpectedInput)
     else {
 
@@ -20,14 +20,14 @@ case class NotParser[A, __](
           remaining.nonEmpty &&
             (underlying parse remaining).fold(
               ifLeft = { _ =>
-                remaining = remaining.tail.force
+                remaining = remaining.tail
                 true
               },
               ifRight = _ => false
             )
         }
 
-      success(toValue(consumed.force), remaining)
+      success(toValue(consumed), remaining)
     }
   }
 }

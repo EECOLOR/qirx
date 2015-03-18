@@ -12,6 +12,7 @@ import qirx.parser.Result
 import qirx.parser.Either
 import qirx.parser.Left
 import qirx.parser.Right
+import qirx.parser.Input
 
 trait Documentation extends Specification {
   /* required for the location macro of little-spec */
@@ -20,7 +21,7 @@ trait Documentation extends Specification {
   def sideEffectExample(code: => Unit)(implicit location: Location): Fragment =
     createFragment(Source.codeAtLocation(location), { code; success })
 
-  def beResult[A](expected: (A -> View[Char] with HasPreciseSize)*)(implicit force: Enforcer[A]) =
+  def beResult[A](expected: (A -> (Int, Input))*)(implicit force: Enforcer[A]) =
     new Assertion[Either[Failure, View[Result[A]]]] {
       def assert(result: => Either[Failure, View[Result[A]]]) =
         result match {
@@ -29,9 +30,10 @@ trait Documentation extends Specification {
             results.force.size is Size(expected.size) withMessage ("size is not expected: " + _)
 
             results zip expected foreach { case (result, expected) =>
-                val (value, remaining) = expected
+                val (value, (position, remaining)) = expected
                 force(result.value) is force(value) withMessage ("result is incorrect: " + _)
-                result.remaining.force is remaining.force withMessage("remaining is incorrect: " + _)
+                result.remaining.underlying.force is remaining.underlying.force withMessage("remaining is incorrect: " + _)
+                result.remaining.position is position withMessage ("position is incorrect: " + _)
             }
             scala.Right(success)
         }

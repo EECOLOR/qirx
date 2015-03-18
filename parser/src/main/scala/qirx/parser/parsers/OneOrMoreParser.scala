@@ -9,7 +9,7 @@ case class OneOrMoreParser[A, B](
   toValue    : View[A] => B
 ) extends Parser[B] {
 
-  def parse(input: InvariantView[Char]): Failure | View[Result[B]] = {
+  def parse(input: Input): Failure | View[Result[B]] = {
 
     def toView(x:A):View[A] = newView(x)
     var lastResult = ParseResult(ParseResult(underlying parse input) transform toView)

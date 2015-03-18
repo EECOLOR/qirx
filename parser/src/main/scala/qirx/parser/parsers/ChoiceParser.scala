@@ -11,7 +11,7 @@ case class ChoiceParser[A, B](
 
   if (parsers.isEmpty) abort("Can not operate without any parsers.")
 
-  def parse(input: InvariantView[Char]): Failure | View[Result[B]] = {
+  def parse(input: Input): Failure | View[Result[B]] = {
 
     val start = emptyValue[(View[Failure], View[Result[A]])]
 

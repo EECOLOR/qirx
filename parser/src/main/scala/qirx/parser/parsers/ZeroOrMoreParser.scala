@@ -9,7 +9,7 @@ case class ZeroOrMoreParser[A, B](
   toValue    : View[A] => B
 ) extends Parser[B] {
 
-  def parse(input: InvariantView[Char]): Failure | View[Result[B]] = {
+  def parse(input: Input): Failure | View[Result[B]] = {
 
     var lastResult = ParseResult.withSingleResult(emptyValue[View[A]], input)
     var continue = true
