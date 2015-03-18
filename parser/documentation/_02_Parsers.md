@@ -92,9 +92,7 @@ Note that this parser throws an exception if no parsers were given during constr
 - It returns the correct value if one of the parsers matched the input
 - It returns multiple values if more than one matches the input
  
-nested choices
-> Pending: TODO
-
+- It correctly handles nested choice parsers
 ## Sequence parser
 
 This parser consumes the input using the given sequence of other parsers. It will then

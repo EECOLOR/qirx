@@ -137,7 +137,15 @@ object _02_Parsers extends Documentation {
      "- It returns multiple values if more than one matches the input\n " - {
        choiceParser parse "abcde" must beResult("abc" -> "de", "abcd" -> "e")
      }
-     "nested choices" - {}
+     "- It correctly handles nested choice parsers" - {
+       val c = ChoiceParser(Direct(choiceParser, choiceParser), identity[String])
+       c parse "abcde" must beResult(
+         "abc" -> "de",
+         "abcd" -> "e",
+         "abc" -> "de",
+         "abcd" -> "e"
+       )
+     }
 
      var sequenceParser: Parser[View[String]] = null
 
