@@ -12,7 +12,7 @@ The parsers correspond do the elements in grammer:
 
 - The character parser can be used to parse `Terminal` elements
 - The choice parser can be used to parse `Choice` elements
-- The sequence parser can be used to parse `Sequence` elements
+- The sequence parser can be used to parse `Sequence` (or `Nonterminal`) elements
 - The not parser can be used to parse `Attributed.not` elements
 - The zero or one parser can be used to parse `Attributed.zeroOrOne` elements
 - The zero or more parser can be used to parse `Attributed.zeroOrMore` elements
