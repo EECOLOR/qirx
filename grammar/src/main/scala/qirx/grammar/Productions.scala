@@ -12,7 +12,7 @@ trait Productions {
 
   private[this] var _productions = emptyValue[ExMap[Nonterminal, Element]]
 
-  def productions = _productions
+  def productions: ExMap[Nonterminal, Element] = _productions
 
   protected[this] implicit class NonterminalOperations(nonterminal: Nonterminal) {
     def := (element: Element):Unit = _productions += (nonterminal, element)
