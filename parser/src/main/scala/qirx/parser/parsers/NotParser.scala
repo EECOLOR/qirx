@@ -5,8 +5,9 @@ import psp.api._
 import psp.std.{ Failure => _, _ }
 
 case class NotParser[A, __](
-  underlying: Parser[__],
-  toValue: Input => A) extends Parser[A] {
+  underlying : Parser[__],
+  toValue    : InvariantView[Char] with HasPreciseSize => A
+) extends Parser[A] {
 
   def parse(input: Input): Failure | View[Result[A]] = {
     if (input.isEmpty) Left(ExpectedInput(input))
@@ -27,7 +28,7 @@ case class NotParser[A, __](
             )
         }
 
-      success(toValue(consumed), remaining)
+      success(toValue(consumed.underlying), remaining)
     }
   }
 }

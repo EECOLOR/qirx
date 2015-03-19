@@ -6,7 +6,7 @@ import psp.std.{ Failure => _, _ }
 
 case class CharacterParser[A](
   consume: Input => SplitInput,
-  toValue: Input => A
+  toValue: InvariantView[Char] with HasPreciseSize => A
 ) extends Parser[A] {
 
   def parse(input: Input): Failure | View[Result[A]] =
@@ -14,7 +14,7 @@ case class CharacterParser[A](
     else {
       val SplitInput(consumed, remaining) = consume(input)
       if (consumed.isEmpty) failure(InvalidInput(input))
-      else success(toValue(consumed), remaining)
+      else success(toValue(consumed.underlying), remaining)
     }
 }
 
@@ -28,7 +28,7 @@ object CharacterParser {
         if (consumed.underlying.force == value.force) SplitInput(consumed, input.drop(size))
         else SplitInput(Input.empty, input)
       },
-      toValue = _.underlying.force
+      toValue = _.force
     )
   }
 

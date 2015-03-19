@@ -41,8 +41,8 @@ retult to a custom case class.
 def customConsume(characters: Input): SplitInput =
   characters.span(c => c == 'a' || c == 'b')
 
-def customToValue(consumed: Input): CustomResult =
-  CustomResult(consumed.underlying.force[String])
+def customToValue(consumed: InvariantView[Char] with HasPreciseSize): CustomResult =
+  CustomResult(consumed.force[String])
 
 characterParser =
   CharacterParser(
@@ -132,7 +132,7 @@ Below a parser that consumes anything but the `x` character.
 notParser =
   NotParser(
     underlying = CharacterParser.char('x'),
-    toValue    = _.underlying.force[String]
+    toValue    = _.force[String]
   )
 ```
 - It will return a failure if the input is empty

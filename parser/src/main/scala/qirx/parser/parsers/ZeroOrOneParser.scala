@@ -5,8 +5,8 @@ import psp.api._
 import psp.std.{ Failure => _, _ }
 
 case class ZeroOrOneParser[A, B](
-  underlying: Parser[A],
-  toValue: Option[A] => B
+  underlying : Parser[A],
+  toValue    : Option[A] => B
 ) extends Parser[B] {
 
   def parse(input: Input): Failure | View[Result[B]] = {
