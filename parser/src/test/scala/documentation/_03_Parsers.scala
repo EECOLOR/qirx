@@ -70,6 +70,8 @@ object _03_Parsers extends Documentation {
          )
      }
 
+     "prevent non-consuming parsers" - {}
+
      "- It returns a failure on empty input" - {
        characterParser parse "" must beFailure[ExpectedInput](at = 0, input = "")
      }

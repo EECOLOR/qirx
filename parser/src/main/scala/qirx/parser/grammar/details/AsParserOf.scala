@@ -58,28 +58,31 @@ object AsParserOf extends LowerPriorityAsParserOf {
       def apply(e: Nonterminal[T]) = nonTerminalParsers(e)
     }
 
-  implicit def zeroOrOne [A <: Element, B, C](
+  implicit def zeroOrOne [A <: Element, B, C, D](
     implicit asParser    : A AsParserOf B,
-             constructor : Constructor[Option[B], C]
+             normalize   : Option[B] NormalizedAs C,
+             constructor : Constructor[C, D]
   ) =
-    new (ZeroOrOne[A] AsParserOf C) {
-      def apply(e: ZeroOrOne[A]) = ZeroOrOneParser(asParser(e.element), constructor)
+    new (ZeroOrOne[A] AsParserOf D) {
+      def apply(e: ZeroOrOne[A]) = ZeroOrOneParser(asParser(e.element), normalize andThen constructor)
     }
 
-  implicit def zeroOrMore[A <: Element, B, C](
+  implicit def zeroOrMore[A <: Element, B, C, D](
     implicit asParser    : A AsParserOf B,
-             constructor : Constructor[View[B], C]
+             normalize   : View[B] NormalizedAs C,
+             constructor : Constructor[C, D]
   ) =
-    new (ZeroOrMore[A] AsParserOf C) {
-      def apply(e: ZeroOrMore[A]) = ZeroOrMoreParser(asParser(e.element), constructor)
+    new (ZeroOrMore[A] AsParserOf D) {
+      def apply(e: ZeroOrMore[A]) = ZeroOrMoreParser(asParser(e.element), normalize andThen constructor)
     }
 
-  implicit def oneOrMore[A <: Element, B, C](
+  implicit def oneOrMore[A <: Element, B, C, D](
     implicit asParser    : A AsParserOf B,
-             constructor : Constructor[View[B], C]
+             normalize   : View[B] NormalizedAs C,
+             constructor : Constructor[C, D]
   ) =
-    new (OneOrMore[A] AsParserOf C) {
-      def apply(e: OneOrMore[A]) = OneOrMoreParser(asParser(e.element), constructor)
+    new (OneOrMore[A] AsParserOf D) {
+      def apply(e: OneOrMore[A]) = OneOrMoreParser(asParser(e.element), normalize andThen constructor)
     }
 
   implicit def sequence[E <: HList, H, T <: HList, A <: HList, B <: HList, C, D](
@@ -171,26 +174,36 @@ object AsParserOf extends LowerPriorityAsParserOf {
         }
     }
 
-    trait NormalizedAs[-L <: HList, O] extends (L => O) {
-      def apply(a:L):O
+    trait NormalizedAs[-I, O] extends (I => O) {
+      def apply(i:I):O
     }
 
     trait LowerPriorityNormalizedAs {
-      implicit def multiple[H, T <: HList] =
-        new ((H :: T) NormalizedAs (H :: T)) {
-          def apply(list: H :: T) = list
+      implicit def any[T] =
+        new (T NormalizedAs T) {
+          def apply(i: T) = i
         }
     }
 
     object NormalizedAs extends LowerPriorityNormalizedAs {
       implicit def hnil =
         new (HNil NormalizedAs Unit) {
-          def apply(list: HNil) = ()
+          def apply(i: HNil) = ()
         }
 
       implicit def single[H] =
         new ((H :: HNil) NormalizedAs H) {
-          def apply(list: H :: HNil) = list.head
+          def apply(i: H :: HNil) = i.head
+        }
+
+      implicit def unitOption =
+        new (Option[Unit] NormalizedAs Unit) {
+          def apply(i: Option[Unit]) = ()
+        }
+
+      implicit def unitView =
+        new (View[Unit] NormalizedAs Unit) {
+          def apply(i: View[Unit]) = ()
         }
     }
   }
