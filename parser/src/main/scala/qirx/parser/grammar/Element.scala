@@ -13,17 +13,18 @@ case class Sequence[+E <: HList](elements: E)(implicit ev: E ContainsSubTypesOf 
 
 case class Choice[+E <: HList](options: E)(implicit ev: E ContainsSubTypesOf Element) extends Element
 
-case class OneOrMore [E <: Element](element: E) extends Element
-case class ZeroOrMore[E <: Element](element: E) extends Element
-case class ZeroOrOne [E <: Element](element: E) extends Element
+case class OneOrMore [+E <: Element](element: E) extends Element
+case class ZeroOrMore[+E <: Element](element: E) extends Element
+case class ZeroOrOne [+E <: Element](element: E) extends Element
 
-case class Not[E <: Element](element: E) extends Element
+case class Not[+E <: Element](element: E) extends Element
 
 trait Nonterminal[+R] extends Element
 
 sealed trait Terminal extends Element
 
 trait Free extends Terminal
+trait Scrap extends Free
 
 sealed trait NonFree extends Terminal
 

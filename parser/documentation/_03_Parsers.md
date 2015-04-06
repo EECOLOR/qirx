@@ -50,6 +50,9 @@ characterParser =
     toValue = customToValue
   )
 ```
+prevent non-consuming parsers
+> Pending: TODO
+
 - It returns a failure on empty input
 - It returns a failure if the parser did not consume anything
 - When it consumes input it will return the value together with the unconsumed input

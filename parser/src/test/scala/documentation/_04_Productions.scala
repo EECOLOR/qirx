@@ -8,9 +8,11 @@ import qirx.parser.details._
 import qirx.parser.grammar._
 import qirx.parser.grammar.details.AsParserOf
 import qirx.parser.grammar.details.Constructor
+import qirx.parser.grammar.details.TransformedTo
 import qirx.parser.Parser
 import StdShow._
 import qirx.parser.grammar.details.Translate
+import qirx.parser.parsers.CharacterParser
 
 object _04_Productions extends Documentation {
 
@@ -38,11 +40,50 @@ object _04_Productions extends Documentation {
      | """.stripMargin - example {
        // Create the grammar
        object grammar extends Grammar with Translations {
+
+         import whitespaceHandling._
+
          Statement  := `call` ~ CallType.? ~ Id ~ `(` ~ Expression ~ (`,` ~ Expression).* ~ `)`
          CallType   := `special` | `normal`
          Expression := String | Number
          String     := `"` ~ !`"` ~ `"` // "
          Number     := Numeric
+       }
+
+       // Define the translations
+       trait Translations extends NonFreeStrings with FreeCharacters {
+         val nonFreeStrings: ExMap[NonFree, String] = Direct(
+           `call`    -> "call",
+           `special` -> "special",
+           `normal`  -> "normal",
+           `(` -> "(",
+           `)` -> ")",
+           `,` -> ",",
+           `"` -> "\""
+         ).toExMap
+
+         val freeCharacters: ExMap[Free, ExSet[Char]] = Direct(
+           Id         -> ExSet('a' to 'z'),
+           Numeric    -> ExSet('0' to '9'),
+           Whitespace -> ExSet(Direct(' ', '\t'))
+         ).toExMap
+       }
+
+       // Add whitespace handling
+       object whitespaceHandling {
+
+         // The current Scala compiler requires us to add the return type because we import it
+         implicit def whitespaceHNil: (HNil TransformedTo (ZeroOrOne[Scrap] :: HNil)) =
+             new (HNil TransformedTo (ZeroOrOne[Scrap] :: HNil)) {
+               def apply(i: HNil) = Whitespace.? :: i
+             }
+
+         implicit def whitespaceHList[H, T <: HList, O <: HList](
+           implicit transformTail: T TransformedTo O
+         ): ((H :: T) TransformedTo (ZeroOrOne[Scrap] :: H :: O)) =
+           new ((H :: T) TransformedTo (ZeroOrOne[Scrap] :: H :: O)) {
+             def apply(i: H :: T) = Whitespace.? :: i.head :: transformTail(i.tail)
+           }
        }
 
        // Define the nonterminals
@@ -51,6 +92,18 @@ object _04_Productions extends Documentation {
        case object CallType   extends Nonterminal[ast.CallType]
        case object String     extends Nonterminal[ast.StringValue]
        case object Number     extends Nonterminal[ast.NumberValue]
+
+       // Define the terminals
+       case object `(` extends GroupMarker
+       case object `)` extends GroupMarker
+       case object `,` extends Separator
+       case object `"` extends GroupMarker // "
+       case object `call`     extends Keyword
+       case object `special`  extends Feature
+       case object `normal`   extends Feature
+       case object Id         extends Free
+       case object Numeric    extends Free
+       case object Whitespace extends Scrap
 
        // Define the AST
        object ast {
@@ -72,37 +125,8 @@ object _04_Productions extends Documentation {
          }
        }
 
-       // Define the terminals
-       case object `(` extends GroupMarker
-       case object `)` extends GroupMarker
-       case object `,` extends Separator
-       case object `"` extends GroupMarker // "
-       case object `call`    extends Keyword
-       case object `special` extends Feature
-       case object `normal`  extends Feature
-       case object Id        extends Free
-       case object Numeric   extends Free
-
-       // Define the translations
-       trait Translations extends NonFreeStrings with FreeCharacters {
-         val nonFreeStrings: ExMap[NonFree, String] = Direct(
-           `call`    -> "call",
-           `special` -> "special",
-           `normal`  -> "normal",
-           `(` -> "(",
-           `)` -> ")",
-           `,` -> ",",
-           `"` -> "\""
-         ).toExMap
-
-         val freeCharacters: ExMap[Free, ExSet[Char]] = Direct(
-           Id      -> ExSet('a' to 'z'),
-           Numeric -> ExSet('0' to '9')
-         ).toExMap
-       }
-
        val Some(parser) = grammar.parser(Statement)
-       parser parse """callspecialtest("test1","test2",12)""" match {
+       parser parse """  call special  test("test1" ,  "test2",12) """ match {
          case Failed(f) => failure(f.toString)
          case Succeeded(results) if results.size == Size(1L) =>
            val result = results.head
@@ -135,12 +159,14 @@ object _04_Productions extends Documentation {
        case object `separator`   extends Separator
        case object `feature`     extends Feature
        case object FreeValue     extends Free
+       case object `scrap`       extends Scrap
 
        typeOfParser(`keyword`)     must be[Unit]
        typeOfParser(`groupmarker`) must be[Unit]
        typeOfParser(`separator`)   must be[Unit]
        typeOfParser(`feature`)     must be[`feature`.type]
        typeOfParser(FreeValue)     must be[String]
+       typeOfParser(`scrap`)       must be[Unit]
 
        object NonterminalValue extends Nonterminal[Boolean]
        typeOfParser(NonterminalValue) must be[Boolean]

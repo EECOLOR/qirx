@@ -21,18 +21,25 @@ trait LowerPriorityAsParserOf {
     new (NonFree AsParserOf Unit) {
       def apply(e: NonFree) = CharacterParser.string(nonFreeStrings(e), _ => ())
     }
+
+  implicit def free[A](
+    implicit freeCharacters : Translate[Free, ExSet[Char]],
+      constructor    : Constructor[String, A]
+    ) =
+      new (Free AsParserOf A) {
+        def apply(e: Free) = CharacterParser(_ span freeCharacters(e), constructor compose (_.force))
+      }
 }
 
 object AsParserOf extends LowerPriorityAsParserOf {
 
   import utilities._
 
-  implicit def free[A](
-    implicit freeCharacters : Translate[Free, ExSet[Char]],
-             constructor    : Constructor[String, A]
+  implicit def scrap[A](
+    implicit freeCharacters : Translate[Free, ExSet[Char]]
   ) =
-    new (Free AsParserOf A) {
-      def apply(e: Free) = CharacterParser(_ span freeCharacters(e), constructor compose (_.force))
+    new (Scrap AsParserOf Unit) {
+      def apply(e: Scrap) = CharacterParser(_ span freeCharacters(e), _ => ())
     }
 
   implicit def not[A <: Element, B, C](
@@ -85,8 +92,9 @@ object AsParserOf extends LowerPriorityAsParserOf {
       def apply(e: OneOrMore[A]) = OneOrMoreParser(asParser(e.element), normalize andThen constructor)
     }
 
-  implicit def sequence[E <: HList, H, T <: HList, A <: HList, B <: HList, C, D](
-    implicit asParsers   : E AsParserList (H :: T),
+  implicit def sequence[E <: HList, F <: HList, H, T <: HList, A <: HList, B <: HList, C, D](
+    implicit constomize  : E TransformedTo F,
+             asParsers   : F AsParserList (H :: T),
              parse       : (H :: T) ParsesTo A,
              withoutUnit : A WithoutUnitAs B,
              normalize   : B NormalizedAs C,
@@ -108,6 +116,7 @@ object AsParserOf extends LowerPriorityAsParserOf {
     }
 
   object utilities {
+
     trait ToViewOf[-L <: HList, +A] extends (L => View[A]) {
       def apply(list: L): View[A]
     }
