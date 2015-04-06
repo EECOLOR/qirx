@@ -1,6 +1,6 @@
 package qirx.parser
 
-trait Failure {
+sealed trait Failure {
   def input: Input
 }
 

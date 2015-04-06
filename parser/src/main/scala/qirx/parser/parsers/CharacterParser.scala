@@ -1,8 +1,14 @@
 package qirx.parser
 package parsers
 
-import psp.api._
-import psp.std.{ Failure => _, _ }
+import psp.api.View
+import psp.api.InvariantView
+import psp.api.HasPreciseSize
+import psp.std.Char
+import psp.std.String
+import psp.std.upcastForView
+import psp.std.implicitBuildsString
+import qirx.parser.details.SplitInput
 
 case class CharacterParser[A](
   consume: Input => SplitInput,
@@ -20,7 +26,7 @@ case class CharacterParser[A](
 
 object CharacterParser {
 
-  def string(value: View[Char] with HasPreciseSize): CharacterParser[String] = {
+  def string[A](value: View[Char] with HasPreciseSize, toValue: String => A): CharacterParser[A] = {
     val size = value.size
     CharacterParser(
       consume = { input =>
@@ -28,14 +34,7 @@ object CharacterParser {
         if (consumed.underlying.force == value.force) SplitInput(consumed, input.drop(size))
         else SplitInput(Input.empty, input)
       },
-      toValue = _.force
-    )
-  }
-
-  def char(value: Char): CharacterParser[Char] = {
-    CharacterParser(
-      consume = _.span(_ == value),
-      toValue = _.head
+      toValue = toValue compose (_.force)
     )
   }
 }

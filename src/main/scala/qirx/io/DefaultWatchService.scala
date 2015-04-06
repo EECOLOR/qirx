@@ -11,10 +11,13 @@ import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.blocking
+import psp.std.Unit
+import psp.std.?=>
+import psp.std.abort
 
 class DefaultWatchService(failureHandler: FailureHandler)(implicit ec: ExecutionContext) extends WatchService {
 
-  def watch(dir: Path, listener: PartialFunction[Event,Unit]):Unit =
+  def watch(dir: Path, listener: Event ?=> Unit):Unit =
     Future(watchUsing(dir, listener)).failed foreach failureHandler.failure
 
   /*
@@ -38,7 +41,7 @@ class DefaultWatchService(failureHandler: FailureHandler)(implicit ec: Execution
     watchService
   }
 
-  private[this] def watchUsing(dir: Path, handler: PartialFunction[Event,Unit]) =
+  private[this] def watchUsing(dir: Path, handler: Event ?=> Unit) =
     withKeyFrom(watchServiceFor(dir)) {
       _.pollEvents.asScala.foreach { javaEvent =>
         val detachedPath = javaEvent.context.asInstanceOf[Path]
@@ -55,7 +58,7 @@ class DefaultWatchService(failureHandler: FailureHandler)(implicit ec: Execution
         action(key)
         valid = key.reset
       }
-      sys.error("Please file a ticket and create a test to add a more sensible way of handling this")
+      abort("Please file a ticket and create a test to add a more sensible way of handling this")
     }
   }
 }

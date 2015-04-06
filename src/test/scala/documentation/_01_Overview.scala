@@ -22,8 +22,11 @@ import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration.DurationInt
 import scala.util.Try
+import psp.std._
 
 class _01_Overview extends Specification {
+  /* required for the location macro of little-spec */
+  protected[this] val Seq = psp.std.scSeq
 
   val tmpDirectory = Paths.get("./tmp/_01_Overview")
 

@@ -1,8 +1,8 @@
 package qirx.parser
 package parsers
 
-import psp.api._
-import psp.std.{Failure => _, _}
+import psp.api.View
+import psp.std.conforms
 
 case class OneOrMoreParser[A, B](
   underlying : Parser[A],
@@ -11,18 +11,9 @@ case class OneOrMoreParser[A, B](
 
   def parse(input: Input): Failure | View[Result[B]] = {
 
-    def toView(x:A):View[A] = newView(x)
-    var lastResult = ParseResult(ParseResult(underlying parse input) transform toView)
-    var continue = lastResult.isSuccess
+    def toView(x: A): View[A] = newView(x)
+    val firstResult = underlying parse input mapValue toView
 
-    while(continue) {
-      val parseResult = ParseResult.parseAndConcatenate(lastResult, underlying)
-      continue = parseResult.isSuccess
-      if (continue) {
-        lastResult = parseResult
-      }
-    }
-
-    lastResult transform toValue
+    firstResult repeatWith underlying mapValue toValue
   }
 }

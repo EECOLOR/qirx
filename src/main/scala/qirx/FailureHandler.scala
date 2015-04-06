@@ -1,5 +1,8 @@
 package qirx
 
+import psp.std.Unit
+import psp.std.Throwable
+
 trait FailureHandler {
   def failure(cause: Throwable):Unit
 }

@@ -1,8 +1,10 @@
 package qirx.parser
 package parsers
 
-import psp.api._
-import psp.std.{Failure => _, _}
+import psp.api.View
+import psp.std.conforms
+import psp.std.emptyBaseView
+import psp.std.emptyValue
 
 case class ZeroOrMoreParser[A, B](
   underlying : Parser[A],
@@ -11,17 +13,8 @@ case class ZeroOrMoreParser[A, B](
 
   def parse(input: Input): Failure | View[Result[B]] = {
 
-    var lastResult = ParseResult.withSingleResult(emptyValue[View[A]], input)
-    var continue = true
+    val firstResult = success(emptyValue[View[A]], input)
 
-    while(continue) {
-      val parseResult = ParseResult.parseAndConcatenate(lastResult, underlying)
-      continue = parseResult.isSuccess
-      if (continue) {
-        lastResult = parseResult
-      }
-    }
-
-    lastResult transform toValue
+    firstResult repeatWith underlying mapValue toValue
   }
 }

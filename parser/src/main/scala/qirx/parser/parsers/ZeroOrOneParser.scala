@@ -1,8 +1,10 @@
 package qirx.parser
 package parsers
 
-import psp.api._
-import psp.std.{ Failure => _, _ }
+import psp.api.View
+import psp.std.Option
+import psp.std.None
+import qirx.parser.details.Succeeded
 
 case class ZeroOrOneParser[A, B](
   underlying : Parser[A],
@@ -15,6 +17,6 @@ case class ZeroOrOneParser[A, B](
         ifLeft  = _       => newView(Result(toValue(None), input)),
         ifRight = results => results.map(_.map(toValue compose Option.apply))
       )
-    Right(result)
+    Succeeded(result)
   }
 }

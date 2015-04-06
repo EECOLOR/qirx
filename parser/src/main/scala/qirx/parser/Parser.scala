@@ -1,8 +1,7 @@
 package qirx.parser
 
-import psp.api._
-import psp.api.Api._
+import psp.api.View
 
-trait Parser[A] {
+trait Parser[+A] {
   def parse(input: Input): Failure | View[Result[A]]
 }

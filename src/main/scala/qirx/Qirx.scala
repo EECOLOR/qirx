@@ -8,7 +8,7 @@ import java.nio.file.StandardOpenOption.CREATE_NEW
 import qirx.io.DefaultWatchService
 import qirx.io.WatchService.Create
 import scala.concurrent.ExecutionContext
-import qirx.parser.Parser
+import psp.std._
 
 class Qirx(dir: Path, configuration:Qirx.Configuration) {
 
@@ -24,23 +24,23 @@ class Qirx(dir: Path, configuration:Qirx.Configuration) {
 
       val contents = new String(Files.readAllBytes(file), UTF_8)
 
-      val result = configuration.parser.parse(contents)
+      //val result = configuration.parser.parse(contents)
 
       // TODO Instead of writing to one file. Think about writing each element to it's own file
       //      what would be the benefits?
-      Files.write(rawFile, result.toString getBytes UTF_8, CREATE_NEW)
+      //Files.write(rawFile, result.toString getBytes UTF_8, CREATE_NEW)
     case _ => // ignore
   })
 }
 
 object Qirx {
   case class Configuration(
-    watchService : WatchService,
-    parser       : Parser
+    watchService : WatchService//,
+    //parser       : Parser
   )
   def configurationWith(failureHandler: FailureHandler)(implicit ec: ExecutionContext):Configuration =
     Configuration(
-      watchService = new DefaultWatchService(failureHandler),
-      parser       = Parser.Default
+      watchService = new DefaultWatchService(failureHandler)//,
+      //parser       = Parser.Default
     )
 }

@@ -49,6 +49,8 @@ contents is """|Sequence(
   StringValue("hello world")
 )""".stripMargin
 ```
+> Unexpected failure: java.util.concurrent.TimeoutException: Futures timed out after [2 seconds]
+
 Now we make sure that we did not mis any problems
 ```scala
 Try(Await.result(failure, 1.second)).toOption match {

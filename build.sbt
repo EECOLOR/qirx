@@ -1,12 +1,12 @@
 lazy val `qirx` = project.in( file(".") )
-  .aggregate(`qirx-grammar`)
-
-lazy val `qirx-grammar` = project.in( file("grammar") )
   .settings(commonSettings ++ testSettings : _*)
+  .aggregate(`qirx-parser`)
 
 lazy val `qirx-parser` = project.in( file("parser") )
   .settings(commonSettings ++ testSettings : _*)
-  .dependsOn(`qirx-grammar`, github("EECOLOR", "scala-program-builder", "master"))
+  .settings(
+    libraryDependencies += "com.chuusai" %% "shapeless" % "2.1.0"
+  )
 
 //////// Common ////////
 
@@ -14,7 +14,8 @@ lazy val `qirx-parser` = project.in( file("parser") )
 
 lazy val commonSettings = Seq(
   organization := "org.qirx",
-  scalaVersion := "2.11.6"
+  scalaVersion := "2.11.6",
+  incOptions   := incOptions.value.withNameHashing(true)
 ) ++ noJavaSourceSettings ++ standardLibrarySettings
 
 lazy val noJavaSourceSettings = Seq(

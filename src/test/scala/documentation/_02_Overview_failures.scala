@@ -8,8 +8,11 @@ import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Promise
 import scala.concurrent.duration.DurationInt
+import psp.std._
 
 object _02_Overview_failures extends Specification {
+  /* required for the location macro of little-spec */
+  protected[this] val Seq = psp.std.scSeq
 
 """|# An overview of the failures
    |

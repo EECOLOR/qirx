@@ -1,22 +1,19 @@
 package qirx.parser
 package parsers
 
-import psp.api._
-import psp.std.{ Failure => _, _ }
+import psp.api.View
+import shapeless.::
+import shapeless.HList
+import qirx.parser.details.ParsesTo
 
-case class SequenceParser[A, B](
-  parsers: View[Parser[A]],
-  toValue: View[A] => B
-) extends Parser[B] {
-
-  if (parsers.isEmpty) abort("Can not operate without any parsers.")
+case class SequenceParser[H, T <: HList, A <: HList, B](
+  parsers: H :: T,
+  toValue: A => B)(implicit parse: (H :: T) ParsesTo A) extends Parser[B] {
 
   def parse(input: Input): Failure | View[Result[B]] = {
 
-    val start = ParseResult.withSingleResult(emptyValue[View[A]], input)
+    val result = parse(parsers, input)
 
-    val result = parsers.foldl(start)(ParseResult.parseAndConcatenate)
-
-    result transform toValue
+    result mapValue toValue
   }
 }
