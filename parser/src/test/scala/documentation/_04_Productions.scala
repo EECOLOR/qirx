@@ -74,9 +74,9 @@ object _04_Productions extends Documentation {
 
          // The current Scala compiler requires us to add the return type because we import it
          implicit def whitespaceHNil: (HNil TransformedTo (ZeroOrOne[Scrap] :: HNil)) =
-             new (HNil TransformedTo (ZeroOrOne[Scrap] :: HNil)) {
-               def apply(i: HNil) = Whitespace.? :: i
-             }
+           new (HNil TransformedTo (ZeroOrOne[Scrap] :: HNil)) {
+             def apply(i: HNil) = Whitespace.? :: i
+           }
 
          implicit def whitespaceHList[H, T <: HList, O <: HList](
            implicit transformTail: T TransformedTo O
