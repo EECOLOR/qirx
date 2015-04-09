@@ -8,7 +8,8 @@ import qirx.parser.details.ParsesTo
 
 case class SequenceParser[H, T <: HList, A <: HList, B](
   parsers: H :: T,
-  toValue: A => B)(implicit parse: (H :: T) ParsesTo A) extends Parser[B] {
+  toValue: A => B
+)(implicit parse: (H :: T) ParsesTo A) extends Parser[B] {
 
   def parse(input: Input): Failure | View[Result[B]] = {
 

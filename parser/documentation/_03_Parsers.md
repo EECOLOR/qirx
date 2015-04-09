@@ -18,9 +18,6 @@ The parsers correspond do the elements in grammer:
 - The zero or more parser can be used to parse `Attributed.zeroOrMore` elements
 - The one or more parser can be used to parse `Attributed.zeroOrOne` elements
  
-[Note to self] Create property based tests for all parsers
-> Pending: TODO
-
 A parser is a type with the following signature
  
 ```scala
@@ -50,9 +47,6 @@ characterParser =
     toValue = customToValue
   )
 ```
-prevent non-consuming parsers
-> Pending: TODO
-
 - It returns a failure on empty input
 - It returns a failure if the parser did not consume anything
 - When it consumes input it will return the value together with the unconsumed input
@@ -67,11 +61,12 @@ We have supplied a string parser that can be used to match an exact string.
 - It fails on input that does not start with the specified string
 - It returns the string with no remaining input if it consumed all characters
 - It returns the correct remaining input if it did not consume all characters
+ 
 ## Choice parser
 
 This parser will try to parse input using all of the other parser.
 
-Below an example of a parser that gives an ambiguous result.
+Below an example of a parser that possibly gives an ambiguous result.
  
 ```scala
 choiceParser =
@@ -84,12 +79,12 @@ Note that this parser throws an exception if no parsers were given during constr
 - It returns a failure if there none of the parsers match the input
 - It returns the correct value if one of the parsers matched the input
 - It returns multiple values if more than one matches the input
- 
 - It correctly handles nested choice parsers
+ 
 ## Sequence parser
 
 This parser consumes the input using the given sequence of other parsers. It will then
-convert to the specified result.
+convert the result to the specified result.
 
 Below a parser that is set up for ambiguity.
  
@@ -111,11 +106,10 @@ sequenceParser =
   )
 ```
 Note that this parser will not compile if no parsers were given during construction
-> Pending: TODO
-
 - It returns a failure when any of the given parsers returns a failure
 - It returns a result when all of the given parsers return a result
-- It correctly passes the remaining characters if they for some combination
+- It correctly passes the remaining characters if they have multiple results for some combination
+ 
 ## Not parser
 
 This consumes input that the underlying parser did not accept. Note that it completely
@@ -134,6 +128,7 @@ notParser =
 - It will not consume anything if the underlying parser consumed something
 - It consumes if the underlying parser fails to do so
 - It stops consuming as soon as the underlying parser starts to consume
+ 
 ## Zero or one parser
 
 This parser tries the underlying parser on the input
@@ -150,6 +145,7 @@ zeroOrOneParser =
 - It will not return an error if no input is available
 - It will return the correct remaining characters on a mismatch
 - It returns the results of the parser on a match
+ 
 ## Zero or more parser
 
 This repeats the underlying parser zero or more times.
@@ -166,9 +162,7 @@ zeroOrMoreParser =
 - It will not return an error if no input is available
 - It returns all remaining input if the underlying parser failed
 - It executes the parser multiple times and be as greedy as it can be
-[Note to self] think this through (see the above comment)
-> Pending: TODO
-
+ 
 ## One or more parser
 
 Repeats the underlying parser at least one time
@@ -186,3 +180,4 @@ oneOrMoreParser =
 - It should report a failure when the underlying parser fails
 - It succeeds if the underlying parser consumed at least once
 - It succeeds if the underlying parser can consume multiple times
+ 

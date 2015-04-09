@@ -7,14 +7,10 @@ import psp.std.StdEq._
 import qirx.parser._
 import qirx.parser.parsers._
 import qirx.parser.details.SplitInput
-import qirx.parser.Result
-import qirx.parser.Input
-import qirx.parser.InvalidInput
-import qirx.parser.Failure
-import qirx.parser.ExpectedInput
 import shapeless.::
 import shapeless.HNil
 import shapeless.test.illTyped
+import utils.Documentation
 
 object _03_Parsers extends Documentation {
 
@@ -35,8 +31,6 @@ object _03_Parsers extends Documentation {
    |- The zero or more parser can be used to parse `Attributed.zeroOrMore` elements
    |- The one or more parser can be used to parse `Attributed.zeroOrOne` elements
    | """.stripMargin - {
-
-     "[Note to self] Create property based tests for all parsers" - {}
 
   """|A parser is a type with the following signature
      | """.stripMargin - sideEffectExample {
@@ -70,8 +64,6 @@ object _03_Parsers extends Documentation {
          )
      }
 
-     "prevent non-consuming parsers" - {}
-
      "- It returns a failure on empty input" - {
        characterParser parse "" must beFailure[ExpectedInput](at = 0, input = "")
      }
@@ -97,20 +89,18 @@ object _03_Parsers extends Documentation {
      "- It returns the string with no remaining input if it consumed all characters" - {
        `abc` parse "abc" must beResult("abc" -> (3 -> ""))
      }
-     "- It returns the correct remaining input if it did not consume all characters" - {
+     "- It returns the correct remaining input if it did not consume all characters\n " - {
        `abc` parse "abcdefg" must beResult("abc" -> (3 -> "defg"))
      }
 
-     var `a`: Parser[Char] = null // "
-
-  val `abcd` = CharacterParser.string("abcd", identity)
-  var choiceParser: Parser[String] = null
+    val `abcd` = CharacterParser.string("abcd", identity)
+    var choiceParser: Parser[String] = null
 
   """|## Choice parser
      |
      |This parser will try to parse input using all of the other parser.
      |
-     |Below an example of a parser that gives an ambiguous result.
+     |Below an example of a parser that possibly gives an ambiguous result.
      | """.stripMargin - sideEffectExample {
        choiceParser =
          ChoiceParser(
@@ -128,10 +118,10 @@ object _03_Parsers extends Documentation {
      "- It returns the correct value if one of the parsers matched the input" - {
        choiceParser parse "abce" must beResult("abc" -> (3 -> "e"))
      }
-     "- It returns multiple values if more than one matches the input\n " - {
+     "- It returns multiple values if more than one matches the input" - {
        choiceParser parse "abcde" must beResult("abc" -> (3 -> "de"), "abcd" -> (4 -> "e"))
      }
-     "- It correctly handles nested choice parsers" - {
+     "- It correctly handles nested choice parsers\n " - {
        val c = ChoiceParser(Direct(choiceParser, choiceParser), identity[String])
        c parse "abcde" must beResult(
          "abc"  -> (3 -> "de"),
@@ -146,7 +136,7 @@ object _03_Parsers extends Documentation {
   """|## Sequence parser
      |
      |This parser consumes the input using the given sequence of other parsers. It will then
-     |convert to the specified result.
+     |convert the result to the specified result.
      |
      |Below a parser that is set up for ambiguity.
      | """.stripMargin - sideEffectExample {
@@ -169,6 +159,7 @@ object _03_Parsers extends Documentation {
 
      "Note that this parser will not compile if no parsers were given during construction" - {
        illTyped("SequenceParser(HNil:HNil, identity[HNil]) must throwA[Throwable]")
+       success
      }
      "- It returns a failure when any of the given parsers returns a failure" - {
        sequenceParser parse ""     must beFailure[ExpectedInput](at = 0, input = "")
@@ -182,7 +173,7 @@ object _03_Parsers extends Documentation {
        val result2 = sequenceParser parse "123abcde"
        result2 must beResult(("123" :: "abcd" :: HNil) -> (7 -> "e"))
      }
-     "- It correctly passes the remaining characters if they for some combination" - {
+     "- It correctly passes the remaining characters if they have multiple results for some combination\n " - {
        val parser = SequenceParser(
          parsers = choiceParser :: choiceParser :: HNil,
          toValue = identity[String :: String :: HNil]
@@ -217,7 +208,7 @@ object _03_Parsers extends Documentation {
      "- It consumes if the underlying parser fails to do so" - {
        notParser parse "yyy" must beResult("yyy" -> (3 -> ""))
      }
-     "- It stops consuming as soon as the underlying parser starts to consume" - {
+     "- It stops consuming as soon as the underlying parser starts to consume\n " - {
        notParser parse "yyyxxx" must beResult("yyy" -> (3 -> "xxx"))
      }
 
@@ -243,7 +234,7 @@ object _03_Parsers extends Documentation {
        val expected: Option[String] = None
        zeroOrOneParser parse "1" must beResult(expected -> (0 -> "1"))
      }
-     "- It returns the results of the parser on a match" - {
+     "- It returns the results of the parser on a match\n " - {
        zeroOrOneParser parse "abcd" must beResult(Option("abc") -> (3 -> "d"), Option("abcd") -> (4 -> ""))
      }
 
@@ -268,13 +259,12 @@ object _03_Parsers extends Documentation {
        zeroOrMoreParser parse "a"     must beResult(newView[String]() -> (0 -> "a"))
        zeroOrMoreParser parse "abcde" must beResult(newView("abc") -> (3 -> "de"), newView("abcd") -> (4 -> "e"))
      }
-     "- It executes the parser multiple times and be as greedy as it can be" - {
+     "- It executes the parser multiple times and be as greedy as it can be\n " - {
        zeroOrMoreParser parse "abcdabcd" must beResult(
-         //This result is discarded newView("abc") -> (3 -> "dabcd"),
+         // This result is discarded: newView("abc") -> (3 -> "dabcd")
          newView("abcd", "abc")  -> (7 -> "d"),
          newView("abcd", "abcd") -> (8 -> "" )
        )
-       "[Note to self] think this through (see the above comment)" - todo
      }
 
      var oneOrMoreParser: Parser[View[String]] = null
@@ -305,9 +295,9 @@ object _03_Parsers extends Documentation {
          newView("abcd") -> (4 -> "e")
        )
      }
-     "- It succeeds if the underlying parser can consume multiple times" - {
+     "- It succeeds if the underlying parser can consume multiple times\n " - {
        oneOrMoreParser parse "abcdabcd" must beResult(
-         //This result is discarded newView("abc") -> "dabcd",
+         // This result is discarded: newView("abc") -> (3 -> "dabcd")
          newView("abcd", "abc")  -> (7 -> "d"),
          newView("abcd", "abcd") -> (8 -> "" )
        )
