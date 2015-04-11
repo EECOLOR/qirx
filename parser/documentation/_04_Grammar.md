@@ -31,13 +31,24 @@ define those, we first need to create an AST.
  
 ```scala
 object ast {
-  case class Statement(callType: Option[CallType], id:String, expressions: View[Expression])
+  trait Ast {
+    def position: Position
+  }
+  case class Position(start: Int, end: Int)
 
+  case class Statement(callType: Option[CallType], id:String, expressions: View[Expression])
+  // Extra[Statement,
+  // Positioned[Option[Extra[CallType, Positioned[Feature]]] ::
+  // Positioned[String] ::
+  // Positioned[View[Extra[Expression, Positioned[Any]]]]
   case class CallType(feature: Feature)
+  // Positioned[Feature]
 
   sealed trait Expression
   case class StringValue(value: String) extends Expression
+  // Positioned[String]
   case class NumberValue(value: Int) extends Expression
+  // Positioned[Int]
 
   object NumberValue {
     // We need to define the constructor near the resulting type (NumberValue in this case)
@@ -195,11 +206,9 @@ val result =  statementParser parse """  call special  test("test1" ,  "test2",1
 
 result match {
   case Failed(cause) => failure(cause.toString)
-
   case Succeeded(results) if results.size == Size(1L) =>
-    val result = results.head
-    val statement = result.value
-
+    val Result(result, _) = results.head
+    val statement = result
     statement.callType is Some(ast.CallType(`special`))
     statement.id is "test"
     statement.expressions.to_s is Direct(

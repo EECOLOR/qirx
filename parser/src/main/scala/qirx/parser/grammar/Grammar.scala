@@ -5,6 +5,7 @@ import psp.api._
 import psp.std._
 import qirx.parser.details.ParsesTo
 import qirx.parser.grammar.details.AsParserOf
+import qirx.parser.grammar.details.Constructor
 import qirx.parser.grammar.details.Translate
 
 trait Grammar {
@@ -37,8 +38,16 @@ trait Grammar {
   )
 
   protected implicit class NonterminalOperations[R](nonterminal: Nonterminal[R]) {
-    def := [E <: Element](element: E)(implicit asParser: E AsParserOf R):Unit = {
-      val production = new Production(nonterminal, asParser(element))
+    def := [E <: Element, T](element: E)(
+      implicit asParser: E AsParserOf T,
+               constructor: Constructor[T, R]
+    ):Unit = {
+      val constructingParser =
+        new Parser[R] {
+          lazy val parser = asParser(element)
+          def parse(input: Input) = parser parse input mapValue constructor
+        }
+      val production = new Production[R](nonterminal, constructingParser)
       // https://github.com/paulp/psp-std/issues/37
       _productions = (_productions :+ production).toExSet
     }

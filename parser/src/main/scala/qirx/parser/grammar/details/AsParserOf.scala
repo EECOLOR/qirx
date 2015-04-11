@@ -22,40 +22,37 @@ trait LowerPriorityAsParserOf {
       def apply(e: NonFree) = CharacterParser.string(nonFreeStrings(e), _ => ())
     }
 
-  implicit def free[A](
-    implicit freeCharacters : Translate[Free, ExSet[Char]],
-      constructor    : Constructor[String, A]
-    ) =
-      new (Free AsParserOf A) {
-        def apply(e: Free) = CharacterParser(_ span freeCharacters(e), constructor compose (_.force))
-      }
+  implicit def free(
+    implicit freeCharacters : Translate[Free, ExSet[Char]]
+  ) =
+    new (Free AsParserOf String) {
+      def apply(e: Free) = CharacterParser(_ span freeCharacters(e), _.force)
+    }
 }
 
 object AsParserOf extends LowerPriorityAsParserOf {
 
   import utilities._
 
-  implicit def scrap[A](
+  implicit def scrap(
     implicit freeCharacters : Translate[Free, ExSet[Char]]
   ) =
     new (Scrap AsParserOf Unit) {
       def apply(e: Scrap) = CharacterParser(_ span freeCharacters(e), _ => ())
     }
 
-  implicit def not[A <: Element, B, C](
-    implicit asParser    : A AsParserOf B,
-             constructor : Constructor[String, C]
+  implicit def not[A <: Element, B](
+    implicit asParser    : A AsParserOf B
   ) =
-    new (Not[A] AsParserOf C) {
-      def apply(e: Not[A]) = NotParser(asParser(e.element), constructor compose (_.force))
+    new (Not[A] AsParserOf String) {
+      def apply(e: Not[A]) = NotParser(asParser(e.element), _.force)
     }
 
-  implicit def feature[T <: Feature, A](
-    implicit nonFreeStrings : Translate[Feature, String],
-             constructor    : Constructor[T, A]
+  implicit def feature[T <: Feature](
+    implicit nonFreeStrings : Translate[Feature, String]
   ) =
-    new (T AsParserOf A) {
-      def apply(e: T) = CharacterParser.string(nonFreeStrings(e), _ => constructor(e))
+    new (T AsParserOf T) {
+      def apply(e: T) = CharacterParser.string(nonFreeStrings(e), _ => e)
     }
 
   implicit def nonterminal[T](
@@ -65,54 +62,49 @@ object AsParserOf extends LowerPriorityAsParserOf {
       def apply(e: Nonterminal[T]) = nonTerminalParsers(e)
     }
 
-  implicit def zeroOrOne [A <: Element, B, C, D](
+  implicit def zeroOrOne [A <: Element, B, C](
     implicit asParser    : A AsParserOf B,
-             normalize   : Option[B] NormalizedAs C,
-             constructor : Constructor[C, D]
+             normalize   : Option[B] NormalizedAs C
   ) =
-    new (ZeroOrOne[A] AsParserOf D) {
-      def apply(e: ZeroOrOne[A]) = ZeroOrOneParser(asParser(e.element), normalize andThen constructor)
+    new (ZeroOrOne[A] AsParserOf C) {
+      def apply(e: ZeroOrOne[A]) = ZeroOrOneParser(asParser(e.element), normalize)
     }
 
-  implicit def zeroOrMore[A <: Element, B, C, D](
+  implicit def zeroOrMore[A <: Element, B, C](
     implicit asParser    : A AsParserOf B,
-             normalize   : View[B] NormalizedAs C,
-             constructor : Constructor[C, D]
+             normalize   : View[B] NormalizedAs C
   ) =
-    new (ZeroOrMore[A] AsParserOf D) {
-      def apply(e: ZeroOrMore[A]) = ZeroOrMoreParser(asParser(e.element), normalize andThen constructor)
+    new (ZeroOrMore[A] AsParserOf C) {
+      def apply(e: ZeroOrMore[A]) = ZeroOrMoreParser(asParser(e.element), normalize)
     }
 
-  implicit def oneOrMore[A <: Element, B, C, D](
+  implicit def oneOrMore[A <: Element, B, C](
     implicit asParser    : A AsParserOf B,
-             normalize   : View[B] NormalizedAs C,
-             constructor : Constructor[C, D]
+             normalize   : View[B] NormalizedAs C
   ) =
-    new (OneOrMore[A] AsParserOf D) {
-      def apply(e: OneOrMore[A]) = OneOrMoreParser(asParser(e.element), normalize andThen constructor)
+    new (OneOrMore[A] AsParserOf C) {
+      def apply(e: OneOrMore[A]) = OneOrMoreParser(asParser(e.element), normalize)
     }
 
-  implicit def sequence[E <: HList, F <: HList, H, T <: HList, A <: HList, B <: HList, C, D](
+  implicit def sequence[E <: HList, F <: HList, H, T <: HList, A <: HList, B <: HList, C](
     implicit constomize  : E TransformedTo F,
              asParsers   : F AsParserList (H :: T),
              parse       : (H :: T) ParsesTo A,
              withoutUnit : A WithoutUnitAs B,
-             normalize   : B NormalizedAs C,
-             constructor : Constructor[C, D]
+             normalize   : B NormalizedAs C
   ) =
-    new (Sequence[E] AsParserOf D) {
+    new (Sequence[E] AsParserOf C) {
       def apply(e: Sequence[E]) =
-        SequenceParser(asParsers(e.elements), withoutUnit andThen normalize andThen constructor)
+        SequenceParser(asParsers(e.elements), withoutUnit andThen normalize)
     }
 
-  implicit def choice[E <: HList, A, T <: HList, B, C](
+  implicit def choice[E <: HList, A, T <: HList](
     implicit asParsers   : E AsParserList T,
              parserTypes : T HasCommonSuperTypeOf Parser[A],
-             toView      : T ToViewOf Parser[A],
-             constructor : Constructor[A, B]
+             toView      : T ToViewOf Parser[A]
   ) =
-    new (Choice[E] AsParserOf B) {
-      def apply(e: Choice[E]) = ChoiceParser(e.options |> asParsers |> toView, constructor)
+    new (Choice[E] AsParserOf A) {
+      def apply(e: Choice[E]) = ChoiceParser(e.options |> asParsers |> toView, identity[A])
     }
 
   object utilities {

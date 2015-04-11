@@ -92,10 +92,9 @@ object AsParserOfSpecification extends Documentation {
            }
        }
      }
-     implicitly[`feature`.type AsParserOf Feature]
-     implicitly[`feature`.type AsParserOf ast.Ast]
-     implicitly[Sequence[`feature`.type :: HNil] AsParserOf ast.Ast]
-     implicitly[Sequence[`feature`.type :: ZeroOrMore[`feature`.type] :: HNil] AsParserOf ast.ViewAst]
-     implicitly[Not[`feature`.type] AsParserOf ast.Number]
+     implicitly[Constructor[`feature`.type, ast.Ast]]
+     implicitly[Constructor[`feature`.type :: HNil,  ast.Ast]]
+     implicitly[Constructor[`feature`.type :: View[`feature`.type] :: HNil, ast.ViewAst]]
+     implicitly[Constructor[String, ast.Number]]
    }
 }
