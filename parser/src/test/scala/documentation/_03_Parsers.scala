@@ -131,7 +131,7 @@ object _03_Parsers extends Documentation {
        )
      }
 
-     var sequenceParser: Parser[String :: String :: HNil] = null
+     var sequenceParser: Parser[Result[String] :: Result[String] :: HNil] = null
 
   """|## Sequence parser
      |
@@ -153,7 +153,7 @@ object _03_Parsers extends Documentation {
        sequenceParser =
          SequenceParser(
            parsers = choice :: `abcd` :: HNil,
-           toValue = identity[String :: String :: HNil]
+           toValue = identity[Result[String] :: Result[String] :: HNil]
          )
      }
 
@@ -161,6 +161,13 @@ object _03_Parsers extends Documentation {
        illTyped("SequenceParser(HNil:HNil, identity[HNil]) must throwA[Throwable]")
        success
      }
+
+     def resultToTuple[A]: Result[A] => (A, Position, String) = result =>
+       (result.value, result.position, result.remaining.underlying.force)
+
+     def hlistResultToTuples[A]:Result[A] :: Result[A] :: HNil => (A, Position, String) :: (A, Position, String) :: HNil =
+       hlist => resultToTuple(hlist.head) :: resultToTuple(hlist.tail.head) :: HNil
+
      "- It returns a failure when any of the given parsers returns a failure" - {
        sequenceParser parse ""     must beFailure[ExpectedInput](at = 0, input = "")
        sequenceParser parse "d"    must beFailure[InvalidInput ](at = 0, input = "d")
@@ -168,23 +175,32 @@ object _03_Parsers extends Documentation {
        sequenceParser parse "abcd" must beFailure[InvalidInput ](at = 3, input = "d")
      }
      "- It returns a result when all of the given parsers return a result" - {
-       val result1 = sequenceParser parse "abcabcd"
-       result1 must beResult(("abc" :: "abcd" :: HNil) -> (7 -> ""), ("abc" :: "abcd" :: HNil) ->(7 -> ""))
-       val result2 = sequenceParser parse "123abcde"
-       result2 must beResult(("123" :: "abcd" :: HNil) -> (7 -> "e"))
+       val result1 = sequenceParser parse "abcabcd" mapValue hlistResultToTuples
+       result1 must beResult(
+         (("abc", Position(0, 3), "abcd") :: ("abcd", Position(3, 7), "") :: HNil) -> (7 -> ""),
+         (("abc", Position(0, 3), "abcd") :: ("abcd", Position(3, 7), "") :: HNil) ->(7 -> "")
+       )
+       val result2 = sequenceParser parse "123abcde" mapValue hlistResultToTuples
+       result2 must beResult((("123", Position(0, 3), "abcde") :: ("abcd", Position(3, 7), "e") :: HNil) -> (7 -> "e"))
      }
      "- It correctly passes the remaining characters if they have multiple results for some combination\n " - {
        val parser = SequenceParser(
          parsers = choiceParser :: choiceParser :: HNil,
-         toValue = identity[String :: String :: HNil]
+         toValue = hlistResultToTuples[String]
        )
-       parser parse "abcabcd"  must beResult(( "abc" :: "abc" :: HNil) -> (6 -> "d"), ( "abc" :: "abcd" :: HNil) -> (7 -> ""))
-       parser parse "abcdabcd" must beResult(("abcd" :: "abc" :: HNil) -> (7 -> "d"), ("abcd" :: "abcd" :: HNil) -> (8 -> ""))
-       parser parse "abcdabc"  must beResult(("abcd" :: "abc" :: HNil) -> (7 -> ""))
-       parser parse "abcabc"   must beResult(( "abc" :: "abc" :: HNil) -> (6 -> ""))
+       parser parse "abcabcd"  must beResult(
+         ( ("abc", Position(0, 3), "abcd") :: ("abc",  Position(3, 6), "d") :: HNil) -> (6 -> "d"),
+         ( ("abc", Position(0, 3), "abcd") :: ("abcd", Position(3, 7), "" ) :: HNil) -> (7 -> "")
+       )
+       parser parse "abcdabcd" must beResult(
+         (("abcd", Position(0, 4), "abcd") :: ("abc",  Position(4, 7), "d") :: HNil) -> (7 -> "d"),
+         (("abcd", Position(0, 4), "abcd") :: ("abcd", Position(4, 8), "" ) :: HNil) -> (8 -> "")
+       )
+       parser parse "abcdabc" must beResult((("abcd", Position(0, 4), "abc") :: ("abc", Position(4, 7), "") :: HNil) -> (7 -> ""))
+       parser parse "abcabc"  must beResult((( "abc", Position(0, 3), "abc") :: ("abc", Position(3, 6), "") :: HNil) -> (6 -> ""))
      }
 
-     var notParser: Parser[String] = null
+     var notParser: Parser[InvariantView[Char] with HasPreciseSize] = null
 
   """|## Not parser
      |
@@ -196,20 +212,24 @@ object _03_Parsers extends Documentation {
        notParser =
          NotParser(
            underlying = CharacterParser.string("x", identity),
-           toValue    = _.force[String]
+           toValue    = identity[InvariantView[Char] with HasPreciseSize]
          )
      }
+
+     def viewToString: View[Char] => String = _.force
+
      "- It will return a failure if the input is empty" - {
-       notParser parse "" must beFailure[ExpectedInput](at = 0, input = "")
+       notParser parse "" mapValue viewToString must
+         beFailure[ExpectedInput](at = 0, input = "")
      }
      "- It will not consume anything if the underlying parser consumed something" - {
-       notParser parse "x" must beResult("" -> (0 -> "x"))
+       notParser parse "x" mapValue viewToString must beResult("" -> (0 -> "x"))
      }
      "- It consumes if the underlying parser fails to do so" - {
-       notParser parse "yyy" must beResult("yyy" -> (3 -> ""))
+       notParser parse "yyy" mapValue viewToString must beResult("yyy" -> (3 -> ""))
      }
      "- It stops consuming as soon as the underlying parser starts to consume\n " - {
-       notParser parse "yyyxxx" must beResult("yyy" -> (3 -> "xxx"))
+       notParser parse "yyyxxx" mapValue viewToString must beResult("yyy" -> (3 -> "xxx"))
      }
 
      var zeroOrOneParser: Parser[Option[String]] = null
@@ -238,7 +258,9 @@ object _03_Parsers extends Documentation {
        zeroOrOneParser parse "abcd" must beResult(Option("abc") -> (3 -> "d"), Option("abcd") -> (4 -> ""))
      }
 
-     var zeroOrMoreParser: Parser[View[String]] = null
+     var zeroOrMoreParser: Parser[View[Result[String]]] = null
+     def viewResultToTuple[A]: View[Result[A]] => View[(A, Position, String)] =
+       _.map(resultToTuple)
 
   """|## Zero or more parser
      |
@@ -249,25 +271,32 @@ object _03_Parsers extends Documentation {
        zeroOrMoreParser =
          ZeroOrMoreParser(
            underlying = choiceParser,
-           toValue    = identity[View[String]]
+           toValue    = identity[View[Result[String]]]
          )
      }
      "- It will not return an error if no input is available" - {
-       zeroOrMoreParser parse "" must beResult(newView[String]() -> (0 -> ""))
+       zeroOrMoreParser parse "" mapValue viewResultToTuple must
+         beResult(newView[(String, Position, String)]() -> (0 -> ""))
      }
      "- It returns all remaining input if the underlying parser failed" - {
-       zeroOrMoreParser parse "a"     must beResult(newView[String]() -> (0 -> "a"))
-       zeroOrMoreParser parse "abcde" must beResult(newView("abc") -> (3 -> "de"), newView("abcd") -> (4 -> "e"))
+       zeroOrMoreParser parse "a" mapValue viewResultToTuple must
+         beResult(newView[(String, Position, String)]() -> (0 -> "a"))
+       zeroOrMoreParser parse "abcde" mapValue viewResultToTuple must
+         beResult(
+           newView(("abc",  Position(0, 3), "de")) -> (3 -> "de"),
+           newView(("abcd", Position(0, 4), "e" )) -> (4 -> "e")
+         )
      }
      "- It executes the parser multiple times and be as greedy as it can be\n " - {
-       zeroOrMoreParser parse "abcdabcd" must beResult(
-         // This result is discarded: newView("abc") -> (3 -> "dabcd")
-         newView("abcd", "abc")  -> (7 -> "d"),
-         newView("abcd", "abcd") -> (8 -> "" )
-       )
+       zeroOrMoreParser parse "abcdabcd" mapValue viewResultToTuple must
+         beResult(
+           // This result is discarded: newView("abc") -> (3 -> "dabcd")
+           newView(("abcd", Position(0, 4), "abcd"), ("abc",  Position(4, 7), "d")) -> (7 -> "d"),
+           newView(("abcd", Position(0, 4), "abcd"), ("abcd", Position(4, 8), ""))  -> (8 -> "" )
+         )
      }
 
-     var oneOrMoreParser: Parser[View[String]] = null
+     var oneOrMoreParser: Parser[View[Result[String]]] = null
 
   """|## One or more parser
      |
@@ -278,29 +307,35 @@ object _03_Parsers extends Documentation {
        oneOrMoreParser =
          OneOrMoreParser(
            underlying = choiceParser,
-           toValue    = identity[View[String]]
+           toValue    = identity[View[Result[String]]]
          )
      }
      "- It should return a failure when presented with no input" - {
-       oneOrMoreParser parse "" must beFailure[ExpectedInput](at = 0, input = "")
+       oneOrMoreParser parse "" mapValue viewResultToTuple must
+         beFailure[ExpectedInput](at = 0, input = "")
      }
      "- It should report a failure when the underlying parser fails" - {
-       oneOrMoreParser parse "a" must beFailure[InvalidInput](at = 0, input = "a")
+       oneOrMoreParser parse "a" mapValue viewResultToTuple must
+         beFailure[InvalidInput](at = 0, input = "a")
      }
      "- It succeeds if the underlying parser consumed at least once" - {
-       oneOrMoreParser parse  "abc"  must beResult(newView("abc") -> (3 -> "" ))
-       oneOrMoreParser parse "abce"  must beResult(newView("abc") -> (3 -> "e"))
-       oneOrMoreParser parse "abcde" must beResult(
-         newView("abc") -> (3 -> "de"),
-         newView("abcd") -> (4 -> "e")
-       )
+       oneOrMoreParser parse  "abc" mapValue viewResultToTuple must
+         beResult(newView(("abc", Position(0, 3), "" )) -> (3 -> "" ))
+       oneOrMoreParser parse "abce" mapValue viewResultToTuple must
+         beResult(newView(("abc", Position(0, 3), "e")) -> (3 -> "e"))
+       oneOrMoreParser parse "abcde" mapValue viewResultToTuple must
+         beResult(
+           newView(("abc",  Position(0, 3), "de")) -> (3 -> "de"),
+           newView(("abcd", Position(0, 4), "e" )) -> (4 -> "e")
+         )
      }
      "- It succeeds if the underlying parser can consume multiple times\n " - {
-       oneOrMoreParser parse "abcdabcd" must beResult(
-         // This result is discarded: newView("abc") -> (3 -> "dabcd")
-         newView("abcd", "abc")  -> (7 -> "d"),
-         newView("abcd", "abcd") -> (8 -> "" )
-       )
+       oneOrMoreParser parse "abcdabcd" mapValue viewResultToTuple must
+         beResult(
+           // This result is discarded: newView("abc") -> (3 -> "dabcd")
+           newView(("abcd", Position(0, 4), "abcd"), ("abc",  Position(4, 7), "d")) -> (7 -> "d"),
+           newView(("abcd", Position(0, 4), "abcd"), ("abcd", Position(4, 8), "" )) -> (8 -> "" )
+         )
      }
    }
 }

@@ -8,16 +8,17 @@ import psp.std._
 import psp.std.HashEq.universalEq
 import qirx.parser.details._
 import qirx.parser.grammar._
-import qirx.parser.grammar.details.AsParserOf
-import qirx.parser.grammar.details.Constructor
 import qirx.parser.grammar.details.TransformedTo
+import qirx.parser.grammar.details.Constructor
 import qirx.parser.grammar.details.Translate
 import qirx.parser.Parser
-import shapeless.::
 import shapeless.HList
 import shapeless.HNil
+import shapeless.::
 import StdShow._
 import utils.Documentation
+import qirx.parser.Result
+import qirx.parser.Position
 
 object _04_Grammar extends Documentation {
 
@@ -55,29 +56,36 @@ object _04_Grammar extends Documentation {
 
          case class CallType(feature: Feature)
 
-         sealed trait Expression
+         sealed trait Expression extends Positioned
          case class StringValue(value: String) extends Expression
          case class NumberValue(value: Int) extends Expression
-
-         object NumberValue {
-           // We need to define the constructor near the resulting type (NumberValue in this case)
-           // to avoid ambiguity when the compiler searches for constructors
-           implicit def intConstructor[A](
-             implicit constructor: Constructor[Int, A]
-           ): Constructor[String, A] =
-             new Constructor[String, A] {
-               def apply(s: String) = constructor(s.toInt)
-             }
-         }
        }
      } chain { astExample =>
+
+  """|## The non-string values
+     |
+     |As you might have noted, we have an integer in our AST.
+     |
+     |To be able to construct something that is an integer we have created a constructor
+     |that can construct anything that takes an `Int` as argument. We have defined it
+     |more generic than necessary just to show that we have already provided more generic
+     |constructors.
+     | """.stripMargin -- new Example {
+       object constructors {
+         implicit def intConstructor[A](
+           implicit constructor: Constructor[Int, A]
+         ): Constructor[String, A] =
+           new Constructor[String, A] {
+             def apply(s: Result[String]) = constructor(s map (_.toInt))
+           }
+       }
+     } chain { constructorExample =>
 
      import scala.language.reflectiveCalls
      val ast = astExample.ast
 
-  """|Note that we have added an implicit constructor that can construct anything that
-     |takes an `Int` as argument. We have defined it more generic than necessary just to
-     |show that we have already provided more generic constructors.
+  """|Note that we have extended expressions with the `Positioned` trait, that will give them
+     |a position propery which we can use later on.
      |
      |## The nonterminals
      |
@@ -163,6 +171,7 @@ object _04_Grammar extends Documentation {
 
      import translationsExample.translations
      import whitespace.whitespaceHandling
+     import constructorExample.constructors
      import nonterminals._
      import terminals._
 
@@ -188,6 +197,7 @@ object _04_Grammar extends Documentation {
 
          // import the customizations to make sure they have highest precedence
          import whitespaceHandling._
+         import constructors._
 
          Statement  := `call` ~ CallType.? ~ Id ~ `(` ~ Expression ~ (`,` ~ Expression).* ~ `)`
          CallType   := `special` | `normal`
@@ -237,15 +247,21 @@ object _04_Grammar extends Documentation {
 
            statement.callType is Some(ast.CallType(`special`))
            statement.id is "test"
-           statement.expressions.to_s is Direct(
+
+           val expressions = statement.expressions.toDirect
+           expressions.to_s is Direct(
              ast.StringValue("test1"),
              ast.StringValue("test2"),
              ast.NumberValue(12)
            ).to_s
 
+           expressions(Index(0)).position is Position(22, 27)
+           expressions(Index(1)).position is Position(33, 38)
+           expressions(Index(2)).position is Position(40, 42)
+
          case Succeeded(results) => failure("Expected a single result, got " + results.size + " results")
        }
-     }}}}}}}} // The above examples are nested so that parts can be reused, we chose to visually
-              // hide that fact, resulting in these closing braces
+     }}}}}}}}} // The above examples are nested so that parts can be reused, we chose to visually
+               // hide that fact, resulting in these closing braces
    }
 }

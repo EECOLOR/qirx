@@ -8,12 +8,12 @@ import psp.std.emptyValue
 
 case class ZeroOrMoreParser[A, B](
   underlying : Parser[A],
-  toValue    : View[A] => B
+  toValue    : View[Result[A]] => B
 ) extends Parser[B] {
 
   def parse(input: Input): Failure | View[Result[B]] = {
 
-    val firstResult = success(emptyValue[View[A]], input)
+    val firstResult = emptySuccess(emptyValue[View[Result[A]]], input)
 
     firstResult repeatWith underlying mapValue toValue
   }

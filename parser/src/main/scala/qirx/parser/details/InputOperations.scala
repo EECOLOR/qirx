@@ -37,6 +37,5 @@ trait InputOperations {
 
     def splitAt(index: Precise): SplitInput =
       SplitInput(take(index), drop(index))
-
   }
 }

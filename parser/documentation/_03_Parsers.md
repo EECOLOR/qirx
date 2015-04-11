@@ -102,7 +102,7 @@ val choice = ChoiceParser(Direct(`abc`, take3), identity[String])
 sequenceParser =
   SequenceParser(
     parsers = choice :: `abcd` :: HNil,
-    toValue = identity[String :: String :: HNil]
+    toValue = identity[Result[String] :: Result[String] :: HNil]
   )
 ```
 Note that this parser will not compile if no parsers were given during construction
@@ -121,7 +121,7 @@ Below a parser that consumes anything but the `x` character.
 notParser =
   NotParser(
     underlying = CharacterParser.string("x", identity),
-    toValue    = _.force[String]
+    toValue    = identity[InvariantView[Char] with HasPreciseSize]
   )
 ```
 - It will return a failure if the input is empty
@@ -156,7 +156,7 @@ Below a parser that never fails and executes the underlying parser as often as i
 zeroOrMoreParser =
   ZeroOrMoreParser(
     underlying = choiceParser,
-    toValue    = identity[View[String]]
+    toValue    = identity[View[Result[String]]]
   )
 ```
 - It will not return an error if no input is available
@@ -173,7 +173,7 @@ This parser that consumes the underlying input at least once
 oneOrMoreParser =
   OneOrMoreParser(
     underlying = choiceParser,
-    toValue    = identity[View[String]]
+    toValue    = identity[View[Result[String]]]
   )
 ```
 - It should return a failure when presented with no input

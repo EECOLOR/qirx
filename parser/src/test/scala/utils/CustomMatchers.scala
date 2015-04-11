@@ -9,11 +9,12 @@ import qirx.parser.details.Succeeded
 import qirx.parser.details.Failed
 import qirx.parser.Failure
 import qirx.parser.Input
+import qirx.parser.Position
 import qirx.parser.Result
 
 trait CustomMatchers { _: Specification =>
 
-  def beResult[A](expected: (A -> (Int, Input))*)(implicit force: Enforcer[A]): Assertion[ParseResult[Failure, View[Result[A]]]] =
+  def beResult[A](expected: (A -> (Int, String))*)(implicit force: Enforcer[A]): Assertion[ParseResult[Failure, View[Result[A]]]] =
     new Assertion[ParseResult[Failure, View[Result[A]]]] {
       def assert(result: => ParseResult[Failure, View[Result[A]]]) =
         result match {
@@ -23,12 +24,13 @@ trait CustomMatchers { _: Specification =>
 
             results zip expected foreach { case (result, expected) =>
 
-                val (eValue, (ePosition, Input(eRemaining, 0)))  = expected
-                val Result(rValue, Input(rRemaining, rPosition)) = result
+                val (eValue, (eEnd, eRemaining))  = expected
+                val Result(rValue, rPosition, Input(rRemaining, rEnd)) = result
 
-                force(rValue)    is force(eValue)    withMessage ("result is incorrect: " + _)
-                rRemaining.force is eRemaining.force withMessage ("remaining is incorrect: " + _)
-                rPosition        is ePosition        withMessage ("position is incorrect: " + _)
+                force(rValue)      is force(eValue)      withMessage ("result is incorrect: " + _)
+                rRemaining.force   is eRemaining.force   withMessage ("remaining is incorrect: " + _)
+                rEnd               is eEnd               withMessage ("remaining position is incorrect: " + _)
+                rPosition          is Position(0, eEnd)  withMessage ("position is incorrect: " + _)
             }
 
             scala.Right(success)

@@ -14,8 +14,8 @@ case class ZeroOrOneParser[A, B](
   def parse(input: Input): Failure | View[Result[B]] = {
     val result =
       (underlying parse input).fold(
-        ifLeft  = _       => newView(Result(toValue(None), input)),
-        ifRight = results => results.map(_.map(toValue compose Option.apply))
+        ifFailure = _       => newView(emptyResult(toValue(None), input)),
+        ifSuccess = results => results.map(_.map(toValue compose Option.apply))
       )
     Succeeded(result)
   }

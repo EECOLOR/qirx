@@ -31,40 +31,36 @@ define those, we first need to create an AST.
  
 ```scala
 object ast {
-  trait Ast {
-    def position: Position
-  }
-  case class Position(start: Int, end: Int)
-
   case class Statement(callType: Option[CallType], id:String, expressions: View[Expression])
-  // Extra[Statement,
-  // Positioned[Option[Extra[CallType, Positioned[Feature]]] ::
-  // Positioned[String] ::
-  // Positioned[View[Extra[Expression, Positioned[Any]]]]
+
   case class CallType(feature: Feature)
-  // Positioned[Feature]
 
-  sealed trait Expression
+  sealed trait Expression extends Positioned
   case class StringValue(value: String) extends Expression
-  // Positioned[String]
   case class NumberValue(value: Int) extends Expression
-  // Positioned[Int]
-
-  object NumberValue {
-    // We need to define the constructor near the resulting type (NumberValue in this case)
-    // to avoid ambiguity when the compiler searches for constructors
-    implicit def intConstructor[A](
-      implicit constructor: Constructor[Int, A]
-    ): Constructor[String, A] =
-      new Constructor[String, A] {
-        def apply(s: String) = constructor(s.toInt)
-      }
-  }
 }
 ```
-Note that we have added an implicit constructor that can construct anything that
-takes an `Int` as argument. We have defined it more generic than necessary just to
-show that we have already provided more generic constructors.
+## The non-string values
+
+As you might have noted, we have an integer in our AST.
+
+To be able to construct something that is an integer we have created a constructor
+that can construct anything that takes an `Int` as argument. We have defined it
+more generic than necessary just to show that we have already provided more generic
+constructors.
+ 
+```scala
+object constructors {
+  implicit def intConstructor[A](
+    implicit constructor: Constructor[Int, A]
+  ): Constructor[String, A] =
+    new Constructor[String, A] {
+      def apply(s: Result[String]) = constructor(s map (_.toInt))
+    }
+}
+```
+Note that we have extended expressions with the `Positioned` trait, that will give them
+a position propery which we can use later on.
 
 ## The nonterminals
 
@@ -169,6 +165,7 @@ object grammar extends Grammar {
 
   // import the customizations to make sure they have highest precedence
   import whitespaceHandling._
+  import constructors._
 
   Statement  := `call` ~ CallType.? ~ Id ~ `(` ~ Expression ~ (`,` ~ Expression).* ~ `)`
   CallType   := `special` | `normal`
@@ -206,16 +203,24 @@ val result =  statementParser parse """  call special  test("test1" ,  "test2",1
 
 result match {
   case Failed(cause) => failure(cause.toString)
+
   case Succeeded(results) if results.size == Size(1L) =>
-    val Result(result, _) = results.head
-    val statement = result
+    val result = results.head
+    val statement = result.value
+
     statement.callType is Some(ast.CallType(`special`))
     statement.id is "test"
-    statement.expressions.to_s is Direct(
+
+    val expressions = statement.expressions.toDirect
+    expressions.to_s is Direct(
       ast.StringValue("test1"),
       ast.StringValue("test2"),
       ast.NumberValue(12)
     ).to_s
+
+    expressions(Index(0)).position is Position(22, 27)
+    expressions(Index(1)).position is Position(33, 38)
+    expressions(Index(2)).position is Position(40, 42)
 
   case Succeeded(results) => failure("Expected a single result, got " + results.size + " results")
 }

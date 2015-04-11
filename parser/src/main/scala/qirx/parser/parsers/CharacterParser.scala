@@ -1,13 +1,13 @@
 package qirx.parser
 package parsers
 
-import psp.api.View
-import psp.api.InvariantView
 import psp.api.HasPreciseSize
+import psp.api.InvariantView
+import psp.api.View
 import psp.std.Char
 import psp.std.String
-import psp.std.upcastForView
 import psp.std.implicitBuildsString
+import psp.std.upcastForView
 import qirx.parser.details.SplitInput
 
 case class CharacterParser[A](
@@ -18,9 +18,9 @@ case class CharacterParser[A](
   def parse(input: Input): Failure | View[Result[A]] =
     if (input.isEmpty) failure(ExpectedInput(input))
     else {
-      val SplitInput(consumed, remaining) = consume(input)
-      if (consumed.isEmpty) failure(InvalidInput(input))
-      else success(toValue(consumed.underlying), remaining)
+      val result = consume(input)
+      if (result.consumed.nonEmpty) success(result, toValue)
+      else failure(InvalidInput(input))
     }
 }
 

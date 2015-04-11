@@ -12,11 +12,13 @@ sealed trait ParseResult[+A, +B] {
     case Failed(value)    => Failed(value)
     case Succeeded(value) => f(value)
   }
-  def fold[C](ifLeft: A => C, ifRight: B => C): C = this match {
-    case Failed(value)    => ifLeft(value)
-    case Succeeded(value) => ifRight(value)
+  def fold[C](ifFailure: A => C, ifSuccess: B => C): C = this match {
+    case Failed(value)    => ifFailure(value)
+    case Succeeded(value) => ifSuccess(value)
   }
 }
+
+object ParseResult extends ParseResultOperations
 
 case class Failed[+A]   (value: A) extends ParseResult[A, Nothing]
 case class Succeeded[+A](value: A) extends ParseResult[Nothing, A]

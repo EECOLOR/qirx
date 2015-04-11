@@ -5,6 +5,7 @@ import psp.api.InvariantView
 import psp.api.HasPreciseSize
 import psp.api.View
 import psp.std.Char
+import qirx.parser.details.SplitInput
 
 case class NotParser[A](
   underlying : Parser[_],
@@ -22,15 +23,15 @@ case class NotParser[A](
         input.takeWhile { _ =>
           remaining.nonEmpty &&
             (underlying parse remaining).fold(
-              ifLeft = { _ =>
+              ifFailure = { _ =>
                 remaining = remaining.tail
                 true
               },
-              ifRight = _ => false
+              ifSuccess = _ => false
             )
         }
 
-      success(toValue(consumed.underlying), remaining)
+      success(SplitInput(consumed, remaining), toValue)
     }
   }
 }

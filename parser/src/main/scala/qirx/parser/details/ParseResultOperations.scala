@@ -4,14 +4,20 @@ package details
 import psp.api.View
 import psp.std._
 import qirx.parser.Failure
+import qirx.parser.Parser
 import qirx.parser.Result
 
-trait Enhancements {
+trait ParseResultOperations {
 
-  implicit class ParseResultEnhancement[A](result: Failure | View[Result[A]]) {
+  implicit class `Operations for Failure | View[Result[A]]`[A](
+    result: Failure | View[Result[A]]
+  ) {
 
     def mapValue[B](f: A => B): Failure | View[Result[B]] =
       result map (_ map (_ map f))
+
+    def mapResult[B](f: Result[A] => Result[B]): Failure | View[Result[B]] =
+      result map (_ map f)
 
     def flatMapResult[B](f: Result[A] => Failure | View[Result[B]]): Failure | View[Result[B]] = {
 
@@ -23,21 +29,23 @@ trait Enhancements {
 
     def toResultView: View[Failure | Result[A]] =
       result.fold(
-        ifLeft  = failure => newView(Failed(failure)),
-        ifRight = _ map Succeeded.apply
+        ifFailure = failure => newView(Failed(failure)),
+        ifSuccess = _ map Succeeded.apply
       )
 
     def isSuccess: Boolean = result.fold(_ => false, _ => true)
+  }
 
-    def repeatWith[B](parser: Parser[B])(implicit ev: A => View[B]): Failure | View[Result[View[B]]] = {
-      var lastResult = result mapValue ev
+  implicit class `Operations for Results[View[Result[A]]`[A](
+    result: Failure | Results[View[Result[A]]]
+  ) {
+
+    def repeatWith(parser: Parser[A]): Failure | Results[View[Result[A]]] = {
+      var lastResult = result
       var continue = result.isSuccess
 
       while (continue) {
-        val parseResult =
-          lastResult flatMapResult {
-            case Result(values, remaining) => parser parse remaining mapValue (values :+ _)
-          }
+        val parseResult = lastResult continueWith parser
         continue = parseResult.isSuccess
         if (continue) {
           lastResult = parseResult
@@ -46,9 +54,20 @@ trait Enhancements {
 
       lastResult
     }
+
+    def continueWith(parser: Parser[A]): Failure | Results[View[Result[A]]] =
+      result flatMapResult {
+        case Result(values, position, remaining) =>
+          parser parse remaining mapResult {
+            case result @ Result(_, newPosition, newRemaining) =>
+              Result(values :+ result, Position(position.start, newPosition.end), newRemaining)
+          }
+      }
   }
 
-  implicit class ParseResultViewEnhancements[A](view: View[Failure | Result[A]]) {
+  implicit class `Operations for View[Failure | Result[A]]`[A](
+    view: View[Failure | Result[A]]
+  ) {
 
     def split: (View[Failure], View[Result[A]]) =
       view.foldl(emptyValue[(View[Failure], View[Result[A]])]) {

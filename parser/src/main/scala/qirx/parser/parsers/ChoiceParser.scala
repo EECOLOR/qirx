@@ -1,8 +1,8 @@
 package qirx.parser
 package parsers
 
-import psp.api.View
 import psp.api.IsEmpty
+import psp.api.View
 import psp.std.abort
 import psp.std.upcastForView
 import psp.std.viewToEach
@@ -16,7 +16,11 @@ case class ChoiceParser[A, B](
 
   def parse(input: Input): Failure | View[Result[B]] = {
 
-    val result = parsers.map(_ parse input).flatMap(_.toResultView).toParseResult
+    val result =
+      parsers
+        .map(_ parse input)
+        .flatMap(_.toResultView)
+        .toParseResult
 
     result mapValue toValue
   }

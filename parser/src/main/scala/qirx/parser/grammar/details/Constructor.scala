@@ -1,58 +1,179 @@
-package qirx.parser.grammar
+package qirx.parser
+package grammar
 package details
 
 import psp.api.View
 import psp.std._
-import shapeless.::
+import shapeless.Generic
 import shapeless.HList
 import shapeless.HNil
-import shapeless.Generic
+import shapeless.::
+import qirx.parser.Result
+import qirx.parser.Position
 
-trait Constructor[A, B] extends (A => B) {
-  def apply(a:A):B
+trait Constructor[-A, B] extends (Result[A] => B) {
+  def apply(a:Result[A]):B
 }
 
 object Constructor {
 
-  implicit def conforms[A, B](implicit ev: A => B): Constructor[A, B] =
-    new Constructor[A, B] {
-      def apply(a:A) = ev(a)
+  import utilities._
+
+  implicit def exact[A](
+    implicit addPosition : AddPositionsTo[A]
+  ) =
+    new Constructor[A, A] {
+      def apply(result: Result[A]) = {
+        val instance = result.value
+        addPosition(instance, result.position)
+        instance
+      }
     }
 
-  implicit def generic[A, C <: HList, B](
-    implicit gen: Generic.Aux[B, C], convert: A ToHList C): Constructor[A, B] =
+  implicit def view[A, B](
+    implicit constructor: Constructor[A, B]
+  ) =
+    new Constructor[View[Result[A]], View[B]] {
+      def apply(result: Result[View[Result[A]]]) =
+        result.value map constructor
+    }
+
+  implicit def hlistPattern[A <: HList, B <: HList, C](
+    implicit simplified  : A SimplifiedAs B,
+             alignedTo   : B AlignedTo (C :: HNil),
+             addPosition : AddPositionsTo[C]
+  ) =
+    new Constructor[A, C] {
+      def apply(result: Result[A]) =
+        result.map(_ |> simplified |> (_.head)) |> exact
+    }
+
+  implicit def caseClassLike[A, C <: HList, D <: HList, E <: HList, B](
+    implicit construct   : Generic.Aux[B, E],
+             toHList     : A ToHList C,
+             simplified  : C SimplifiedAs D,
+             toArguments : D AlignedTo E,
+             addPosition : AddPositionsTo[B]
+  ): Constructor[A, B] =
       new Constructor[A, B] {
-        def apply(a:A) = gen.from(convert(a))
+        def apply(result: Result[A]) = {
+          val arguments = result |> toHList |> simplified |> toArguments
+          val instance = construct from arguments
+          addPosition(instance, result.position)
+          instance
+        }
       }
 
-  abstract class ToHList[-A, B <: HList] {
-    def apply(a:A):B
-  }
+  object utilities {
 
-  object ToHList {
+    // Utility traits are marked as sealed because we do not want them to be implemented by the
+    // public. They are an implementation detail.
 
-    implicit def any[A] =
-      new (A ToHList (A :: HNil)) {
-        def apply(a: A) = a :: HNil
+    sealed trait AddPositionsTo[T] {
+      def apply(instance:T, position: Position): Unit
+    }
+
+    sealed trait LowerPriorityAddPositionsTo {
+
+      implicit def any[T] =
+        new AddPositionsTo[T] {
+          def apply(instance:T, position: Position) = ()
+        }
+    }
+
+    object AddPositionsTo extends LowerPriorityAddPositionsTo {
+
+      implicit def positioned[T <: Positioned] =
+        new AddPositionsTo[T] {
+          def apply(instance: T, position: Position) = {
+            if (instance.position == Position.None) {
+              implicit val key: Positioned.Key = null
+              instance.position = position
+            }
+          }
+        }
+    }
+
+    sealed trait AlignedTo[-I <: HList, O <: HList] extends (I => O) {
+      def apply(list : I): O
+    }
+
+    object AlignedTo {
+
+      implicit def hnil =
+        new (HNil AlignedTo HNil) {
+          def apply(list: HNil) = list
+        }
+
+      implicit def hlist[H1, H2, T <: HList, O <: HList](
+        implicit alignedHead : Constructor[H1, H2],
+                 alignedTail : T AlignedTo O
+       ) =
+          new ((Result[H1] :: T) AlignedTo (H2 :: O)) {
+            def apply(list: Result[H1] :: T) = alignedHead(list.head) :: alignedTail(list.tail)
+          }
+    }
+
+    sealed trait SimplifiedAs[-I <: HList, O <: HList] extends (I => O) {
+      def apply(list: I): O
+    }
+
+    sealed trait LowerPrioritySimplifiedAs {
+
+      implicit def sameHead[H, T1 <: HList, T2 <: HList](
+        implicit tail        : T1 SimplifiedAs T2
+      ) =
+        new ((H :: T1) SimplifiedAs (H :: T2)) {
+          def apply(list: H :: T1) = list.head :: tail(list.tail)
+        }
+    }
+
+    object SimplifiedAs extends LowerPrioritySimplifiedAs {
+
+      implicit def hnil =
+        new (HNil SimplifiedAs HNil) {
+          def apply(list: HNil) = list
+        }
+
+      implicit def viewPattern[H1, T1 <: HList, T2 <: HList, A](
+        implicit simplifyTail: T1 SimplifiedAs T2
+      ) =
+        new ((Result[H1] :: Result[Results[H1]] :: T1) SimplifiedAs (Result[Results[H1]] :: T2)) {
+
+          def apply(list: Result[H1] :: Result[Results[H1]] :: T1) = {
+
+            val first  = list.head
+            val second = list.tail.head
+            val tail   = list.tail.tail
+
+            val Result(results, secondPosition, remaining) = second
+
+            val newPosition = Position(first.position.start, secondPosition.end)
+            val newResult   = Result(first +: results, newPosition, remaining)
+
+            newResult :: simplifyTail(tail)
+          }
       }
+    }
 
-    implicit def hnil =
-      new (HNil ToHList HNil) {
-        def apply(a:HNil) = a
-      }
+    sealed trait ToHList[-A, B <: HList] extends (Result[A] => B) {
+      def apply(result: Result[A]):B
+    }
 
-    implicit def sameHead[H, T1 <: HList, T2 <: HList](
-      implicit tail: T1 ToHList T2
-    ) =
-      new ((H :: T1) ToHList (H :: T2)) {
-        def apply(a: H :: T1) = a.head :: tail(a.tail)
-      }
+    sealed trait LowerPriorityToHList {
 
-    implicit def viewPattern[H, T1 <: HList, T2 <: HList](
-      implicit tail: ToHList[T1, T2]
-    ) =
-      new ((H :: View[H] :: T1) ToHList (View[H] :: T2)) {
-        def apply(a: H :: View[H] :: T1) = (a.head +: a.tail.head) :: tail(a.tail.tail)
-      }
+      implicit def single[A] =
+        new (A ToHList (Result[A] :: HNil)) {
+          def apply(result: Result[A]) = result :: HNil
+        }
+    }
+
+    object ToHList extends LowerPriorityToHList {
+
+      implicit def hlist[T <: HList] =
+        new (T ToHList T) {
+          def apply(result: Result[T]) = result.value
+        }
+    }
   }
 }

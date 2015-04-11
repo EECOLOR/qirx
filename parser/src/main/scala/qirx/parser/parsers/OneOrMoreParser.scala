@@ -6,13 +6,15 @@ import psp.std.conforms
 
 case class OneOrMoreParser[A, B](
   underlying : Parser[A],
-  toValue    : View[A] => B
+  toValue    : View[Result[A]] => B
 ) extends Parser[B] {
 
   def parse(input: Input): Failure | View[Result[B]] = {
 
-    def toView(x: A): View[A] = newView(x)
-    val firstResult = underlying parse input mapValue toView
+    def toResultView: Result[A] => Result[View[Result[A]]] =
+      result => result map (_ => newView(result))
+
+    val firstResult = underlying parse input mapResult toResultView
 
     firstResult repeatWith underlying mapValue toValue
   }
