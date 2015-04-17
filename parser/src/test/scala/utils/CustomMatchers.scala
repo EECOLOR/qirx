@@ -37,7 +37,7 @@ trait CustomMatchers { _: Specification =>
         }
     }
 
-  def beFailure[T <: Failure : CTag](at: Long, input: Input): Assertion[ParseResult[Failure, _]] =
+  def beFailure[T <: Failure : CTag](at: Long, input: String, message: String): Assertion[ParseResult[Failure, _]] =
     new Assertion[ParseResult[Failure, _]] {
       def assert(result: => ParseResult[Failure, _]) = {
         result match {
@@ -45,10 +45,10 @@ trait CustomMatchers { _: Specification =>
             failed must beAnInstanceOf[T]
 
             val Input(fInput, fPosition) = failed.input
-            val Input(eInput, 0) = input
 
-            fInput.force is eInput.force withMessage ("input is incorrect: " + _)
-            fPosition    is at           withMessage ("position is incorrect: " + _)
+            fInput.force   is input   withMessage ("input is incorrect: " + _)
+            fPosition      is at      withMessage ("position is incorrect: " + _)
+            failed.message is message withMessage ("message is incorrect: " + _)
             scala.Right(success)
           case Succeeded(results) => scala.Left("Expected failure, got: " + results)
         }

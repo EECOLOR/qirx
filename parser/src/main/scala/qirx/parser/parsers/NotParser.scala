@@ -5,7 +5,6 @@ import psp.api.InvariantView
 import psp.api.HasPreciseSize
 import psp.api.View
 import psp.std.Char
-import qirx.parser.details.SplitInput
 
 case class NotParser[A](
   underlying : Parser[_],
@@ -31,7 +30,7 @@ case class NotParser[A](
             )
         }
 
-      success(SplitInput(consumed, remaining), toValue)
+      success(consumed, remaining, toValue)
     }
   }
 }

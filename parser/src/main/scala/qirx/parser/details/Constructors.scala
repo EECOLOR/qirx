@@ -15,10 +15,8 @@ trait Constructors {
   def emptySuccess[A](value: A, input:Input): Failure | View[Result[A]] =
     Succeeded(Direct(emptyResult(value, input)))
 
-  def success[A](result: SplitInput, toValue: InvariantView[Char] with HasPreciseSize => A): Failure | View[Result[A]] = {
-    val SplitInput(consumed, remaining) = result
+  def success[A](consumed: Input, remaining: Input,  toValue: InvariantView[Char] with HasPreciseSize => A): Failure | View[Result[A]] =
     Succeeded(Direct(Result(toValue(consumed.underlying), Position(consumed.position, remaining.position), remaining)))
-  }
 
   def emptyResult[A](value: A, input: Input): Result[A] =
     Result(value, Position(input.position, input.position), input)

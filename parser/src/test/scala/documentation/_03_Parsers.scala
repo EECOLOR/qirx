@@ -6,9 +6,12 @@ import psp.std.HashEq.universalEq
 import psp.std.StdEq._
 import qirx.parser._
 import qirx.parser.parsers._
+import qirx.parser.details.Consumed
+import qirx.parser.details.Outcome
+import qirx.parser.details.Rejected
 import qirx.parser.details.SplitInput
-import shapeless.::
 import shapeless.HNil
+import shapeless.::
 import shapeless.test.illTyped
 import utils.Documentation
 
@@ -44,6 +47,8 @@ object _03_Parsers extends Documentation {
      case class CustomResult(content: String) extends NaturalHashEq
      var characterParser: CharacterParser[CustomResult] = null
 
+     val expectedInputMessage = "Expected input, but no input was provided"
+
   """|## Character parser
      |
      |This is a parser that consumes characters and converts it to the specified result.
@@ -51,8 +56,10 @@ object _03_Parsers extends Documentation {
      |Below a simple definition that consumes any 'a' or 'b' character and converts its
      |retult to a custom case class.
      | """.stripMargin - sideEffectExample {
-       def customConsume(characters: Input): SplitInput =
-         characters.span(c => c == 'a' || c == 'b')
+       def customConsume(characters: Input): Outcome =
+         characters
+           .span(c => c == 'a' || c == 'b')
+           .toOutcome(ifRejected = "Expected `a` or `b` characters")
 
        def customToValue(consumed: InvariantView[Char] with HasPreciseSize): CustomResult =
          CustomResult(consumed.force[String])
@@ -65,10 +72,12 @@ object _03_Parsers extends Documentation {
      }
 
      "- It returns a failure on empty input" - {
-       characterParser parse "" must beFailure[ExpectedInput](at = 0, input = "")
+       characterParser parse "" must
+         beFailure[ExpectedInput](at = 0, input = "", message = expectedInputMessage)
      }
      "- It returns a failure if the parser did not consume anything" - {
-       characterParser parse "c" must beFailure[InvalidInput](at = 0, input = "c")
+       characterParser parse "c" must
+         beFailure[InvalidInput](at = 0, input = "c", message = "Expected `a` or `b` characters")
      }
      "- When it consumes input it will return the value together with the unconsumed input\n " - {
        characterParser parse "bac" must beResult(CustomResult("ba") -> (2 -> "c"))
@@ -84,7 +93,8 @@ object _03_Parsers extends Documentation {
      }
 
      "- It fails on input that does not start with the specified string" - {
-       `abc` parse "dabc" must beFailure[InvalidInput](at = 0, input = "dabc")
+       `abc` parse "dabc" must
+         beFailure[InvalidInput](at = 0, input = "dabc", message = "Expected `abc`, got `dab`")
      }
      "- It returns the string with no remaining input if it consumed all characters" - {
        `abc` parse "abc" must beResult("abc" -> (3 -> ""))
@@ -112,8 +122,11 @@ object _03_Parsers extends Documentation {
        ChoiceParser(emptyValue[View[Parser[String]]], identity[String]) must throwA[Throwable]
      }
      "- It returns a failure if there none of the parsers match the input" - {
-       choiceParser parse ""    must beFailure[ExpectedInput](at = 0, input = "")
-       choiceParser parse "def" must beFailure[InvalidInput] (at = 0, input = "def")
+       choiceParser parse ""    must
+         beFailure[ExpectedInput](at = 0, input = "", message = expectedInputMessage)
+
+       choiceParser parse "def" must
+         beFailure[InvalidInput] (at = 0, input = "def", message = "Expected `abc`, got `def`")
      }
      "- It returns the correct value if one of the parsers matched the input" - {
        choiceParser parse "abce" must beResult("abc" -> (3 -> "e"))
@@ -140,13 +153,13 @@ object _03_Parsers extends Documentation {
      |
      |Below a parser that is set up for ambiguity.
      | """.stripMargin - sideEffectExample {
-       def takeExactly3(input: Input): SplitInput = {
-         val result @ SplitInput(consumed, _) = input.splitAt(Precise(3))
-         if (consumed.size == Size(3)) result
-         else SplitInput(Input.empty, input)
+       def takeExactly3(input: Input): Outcome = {
+         val SplitInput(consumed, remaining) = input.splitAt(Precise(3))
+         if (consumed.size == Size(3)) Consumed(consumed, remaining)
+         else Rejected(s"Expected exactly 3 characters, got ${consumed.size}")
        }
 
-       val take3 = CharacterParser(takeExactly3, _.mkString(""))
+       val take3 = CharacterParser(takeExactly3, _.force[String])
 
        val choice = ChoiceParser(Direct(`abc`, take3), identity[String])
 
@@ -169,10 +182,14 @@ object _03_Parsers extends Documentation {
        hlist => resultToTuple(hlist.head) :: resultToTuple(hlist.tail.head) :: HNil
 
      "- It returns a failure when any of the given parsers returns a failure" - {
-       sequenceParser parse ""     must beFailure[ExpectedInput](at = 0, input = "")
-       sequenceParser parse "d"    must beFailure[InvalidInput ](at = 0, input = "d")
-       sequenceParser parse "abc"  must beFailure[ExpectedInput](at = 3, input = "")
-       sequenceParser parse "abcd" must beFailure[InvalidInput ](at = 3, input = "d")
+       sequenceParser parse "" must
+         beFailure[ExpectedInput](at = 0, input = "", message = expectedInputMessage)
+       sequenceParser parse "d" must
+         beFailure[InvalidInput ](at = 0, input = "d", message = "Expected `abc`, got `d`")
+       sequenceParser parse "abc" must
+         beFailure[ExpectedInput](at = 3, input = "", message = expectedInputMessage)
+       sequenceParser parse "abcd" must
+         beFailure[InvalidInput ](at = 3, input = "d", message = "Expected `abcd`, got `d`")
      }
      "- It returns a result when all of the given parsers return a result" - {
        val result1 = sequenceParser parse "abcabcd" mapValue hlistResultToTuples
@@ -220,7 +237,7 @@ object _03_Parsers extends Documentation {
 
      "- It will return a failure if the input is empty" - {
        notParser parse "" mapValue viewToString must
-         beFailure[ExpectedInput](at = 0, input = "")
+         beFailure[ExpectedInput](at = 0, input = "", message = expectedInputMessage)
      }
      "- It will not consume anything if the underlying parser consumed something" - {
        notParser parse "x" mapValue viewToString must beResult("" -> (0 -> "x"))
@@ -312,11 +329,11 @@ object _03_Parsers extends Documentation {
      }
      "- It should return a failure when presented with no input" - {
        oneOrMoreParser parse "" mapValue viewResultToTuple must
-         beFailure[ExpectedInput](at = 0, input = "")
+         beFailure[ExpectedInput](at = 0, input = "", message = expectedInputMessage)
      }
      "- It should report a failure when the underlying parser fails" - {
        oneOrMoreParser parse "a" mapValue viewResultToTuple must
-         beFailure[InvalidInput](at = 0, input = "a")
+         beFailure[InvalidInput](at = 0, input = "a", message = "Expected `abc`, got `a`")
      }
      "- It succeeds if the underlying parser consumed at least once" - {
        oneOrMoreParser parse  "abc" mapValue viewResultToTuple must

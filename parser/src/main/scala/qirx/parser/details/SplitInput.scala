@@ -1,4 +1,11 @@
 package qirx.parser
 package details
 
-case class SplitInput(consumed: Input, remaining: Input)
+import psp.std.String
+
+case class SplitInput(consumed: Input, remaining: Input) {
+
+  def toOutcome(ifRejected: => String): Outcome =
+    if (consumed.isEmpty) Rejected(ifRejected)
+    else Consumed(consumed, remaining)
+}

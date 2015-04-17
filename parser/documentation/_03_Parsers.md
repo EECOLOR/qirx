@@ -35,8 +35,10 @@ Below a simple definition that consumes any 'a' or 'b' character and converts it
 retult to a custom case class.
  
 ```scala
-def customConsume(characters: Input): SplitInput =
-  characters.span(c => c == 'a' || c == 'b')
+def customConsume(characters: Input): Outcome =
+  characters
+    .span(c => c == 'a' || c == 'b')
+    .toOutcome(ifRejected = "Expected `a` or `b` characters")
 
 def customToValue(consumed: InvariantView[Char] with HasPreciseSize): CustomResult =
   CustomResult(consumed.force[String])
@@ -89,13 +91,13 @@ convert the result to the specified result.
 Below a parser that is set up for ambiguity.
  
 ```scala
-def takeExactly3(input: Input): SplitInput = {
-  val result @ SplitInput(consumed, _) = input.splitAt(Precise(3))
-  if (consumed.size == Size(3)) result
-  else SplitInput(Input.empty, input)
+def takeExactly3(input: Input): Outcome = {
+  val SplitInput(consumed, remaining) = input.splitAt(Precise(3))
+  if (consumed.size == Size(3)) Consumed(consumed, remaining)
+  else Rejected(s"Expected exactly 3 characters, got ${consumed.size}")
 }
 
-val take3 = CharacterParser(takeExactly3, _.mkString(""))
+val take3 = CharacterParser(takeExactly3, _.force[String])
 
 val choice = ChoiceParser(Direct(`abc`, take3), identity[String])
 

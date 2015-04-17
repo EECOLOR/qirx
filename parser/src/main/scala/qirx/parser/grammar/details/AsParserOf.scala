@@ -17,6 +17,12 @@ trait AsParserOf[-E <: Element, O] {
 
 trait LowerPriorityAsParserOf {
 
+  protected def characterParserFor[A](
+    characters : ExSet[Char],
+    toValue    : InvariantView[Char] with HasPreciseSize => A
+  ): Parser[A] =
+    CharacterParser(_ span characters toOutcome s"Expected one of $characters", toValue)
+
   implicit def nonFree(
     implicit nonFreeStrings: Translate[NonFree, String]
   ) =
@@ -28,7 +34,7 @@ trait LowerPriorityAsParserOf {
     implicit freeCharacters : Translate[Free, ExSet[Char]]
   ) =
     new (Free AsParserOf String) {
-      def apply(e: Free) = CharacterParser(_ span freeCharacters(e), _.force)
+      def apply(e: Free) = characterParserFor(freeCharacters(e), _.force)
     }
 }
 
@@ -40,7 +46,7 @@ object AsParserOf extends LowerPriorityAsParserOf {
     implicit freeCharacters : Translate[Free, ExSet[Char]]
   ) =
     new (Scrap AsParserOf Unit) {
-      def apply(e: Scrap) = CharacterParser(_ span freeCharacters(e), _ => ())
+      def apply(e: Scrap) = characterParserFor(freeCharacters(e), _ => ())
     }
 
   implicit def feature[T <: Feature](
