@@ -71,11 +71,12 @@ object ProductionSpecification extends Documentation {
 
        import AsParserOf.utilities.FlattenedTo
        val customInstance = new CustomType1 {}
-       val target = Result(Result(customInstance, Position(1, 2), "a"), Position(2, 3), "b")
+       val remaining: Input = "b"
+       val target = Result(Result(customInstance, Position(1, 2), "a"), Position(2, 3), remaining)
 
        val flatten = implicitly[Result[CustomType1] FlattenedTo CustomType1]
 
-       flatten(target) is Result(customInstance, Position(1, 2), "b")
+       flatten(target) is Result(customInstance, Position(1, 2), remaining)
      }
 
      "Constructor.utilities.AddPositionsTo" - {

@@ -1,18 +1,21 @@
 package utils
 
-import psp.api.View
+import psp.api._
 import psp.std._
 
 trait Enforcer[A] {
-  def apply(a:A):A
+  type Out
+  def apply(a:A):Out
 }
 trait LowerPriorityEnforcers {
-  implicit def any[A]:Enforcer[A] = new Enforcer[A] {
+  implicit def any[A] = new Enforcer[A] {
+    type Out = A
     def apply(a:A):A = a
   }
 }
 object Enforcer extends LowerPriorityEnforcers {
-  implicit def view[A](implicit force: Enforcer[A]):Enforcer[View[A]] = new Enforcer[View[A]] {
-    def apply(a:View[A]):View[A] = (a map force.apply).force
+  implicit def view[A] = new Enforcer[View[A]] {
+    type Out = Direct[A]
+    def apply(a:View[A]):Direct[A] = a.force
   }
 }
