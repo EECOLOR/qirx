@@ -5,13 +5,15 @@ package details
 import psp.api._
 import psp.std._
 import qirx.parser.grammar._
-import shapeless.::
+import qirx.parser.Input
+import qirx.parser.Result
 import shapeless.HNil
+import shapeless.::
 import utils.Documentation
-import shapeless.HList
-import shapeless.Generic
 
 object ProductionSpecification extends Documentation {
+
+  "Write tests for the error messages of free parsers" - {}
 
   "Here I have tried to list most combinations of productions." - {
 

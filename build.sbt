@@ -8,6 +8,10 @@ lazy val `qirx-parser` = project.in( file("parser") )
     libraryDependencies += "com.chuusai" %% "shapeless" % "2.1.0"
   )
 
+lazy val `qirx-language-parser` = project.in( file("language-parser") )
+  .settings(commonSettings ++ testSettings : _*)
+  .dependsOn(`qirx-parser`)
+  
 //////// Common ////////
 
 //lazy val `psp-std` = github("paulp", "psp-std", "master")

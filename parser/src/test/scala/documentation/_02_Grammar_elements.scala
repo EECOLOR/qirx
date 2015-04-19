@@ -145,6 +145,13 @@ object _02_Grammar_elements extends Documentation {
 
            `feature` must be[Fixed with Capture[Capture.Self]]
          }
+
+      """|#### Literal
+         |
+         |This marks the terminal as being a literal.
+         | """.stripMargin - sideEffectExample {
+           case object `\"` extends Literal
+         }
        }
      }
   """|## Custom

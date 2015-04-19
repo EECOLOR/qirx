@@ -131,3 +131,10 @@ to create your own and hook into the available features.
 ```scala
 case object CustomElement extends Custom
 ```
+#### Literal
+
+This marks the terminal as being a literal.
+ 
+```scala
+case object `\"` extends Literal
+```

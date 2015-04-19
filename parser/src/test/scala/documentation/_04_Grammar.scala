@@ -22,6 +22,8 @@ import qirx.parser.Position
 
 object _04_Grammar extends Documentation {
 
+  "Write the imports inline" - {}
+
 """|# Grammar
    |
    |A grammer consists of productions. In this particular project we focus mainly on the
