@@ -225,6 +225,8 @@ object _03_Parsers extends Documentation {
      |ignores the successful result of the underlying parser.
      |
      |Below a parser that consumes anything but the `x` character.
+     |
+     |Warning: this parser always succeeds, do not use it on it's own within a looping construct
      | """.stripMargin - sideEffectExample {
        notParser =
          NotParser(

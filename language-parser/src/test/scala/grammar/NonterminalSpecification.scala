@@ -30,6 +30,6 @@ object NonterminalSpecification extends GrammarSpecification {
     val parser = grammar parserFor String
 
     parser parse "\"test\"" resultsIn ast.StringValue("test")
-    parser parse "\"te\\\"st" resultsIn ast.StringValue("te\"st")
+    parser parse "\"te\\\"st\"" resultsIn ast.StringValue("te\"st")
   }
 }

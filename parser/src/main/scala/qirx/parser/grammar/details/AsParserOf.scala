@@ -53,13 +53,6 @@ object AsParserOf {
       def apply(e: T) = CharacterParser.string(fixedStrings(e), _ => e)
     }
 
-  implicit def literal(
-    implicit nonFreeStrings : Translate[Literal, String]
-  ) =
-    new (Literal AsParserOf String) {
-      def apply(e: Literal) = CharacterParser.string(nonFreeStrings(e), _.force)
-    }
-
   implicit def nonterminal[T](
     implicit nonTerminalParsers: Translate[Nonterminal[T], Parser[T]]
   ) =

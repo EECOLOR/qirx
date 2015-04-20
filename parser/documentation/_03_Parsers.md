@@ -118,6 +118,8 @@ This consumes input that the underlying parser did not accept. Note that it comp
 ignores the successful result of the underlying parser.
 
 Below a parser that consumes anything but the `x` character.
+
+Warning: this parser always succeeds, do not use it on it's own within a looping construct
  
 ```scala
 notParser =

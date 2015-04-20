@@ -29,7 +29,7 @@ object CharacterParser {
     val size = value.size
     CharacterParser(
       consume = { input =>
-        if (input startsWith value) Consumed(value, input.drop(size))
+        if (input startsWith value) Consumed(value, input drop size)
         else Rejected(s"Expected `${value.force}`, got `${input.take(size).underlying.force[String]}`")
       },
       toValue = toValue compose (_.force)

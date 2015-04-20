@@ -145,15 +145,9 @@ object _02_Grammar_elements extends Documentation {
 
            `feature` must be[Fixed with Capture[Capture.Self]]
          }
-
-      """|#### Literal
-         |
-         |This marks the terminal as being a literal.
-         | """.stripMargin - sideEffectExample {
-           case object `\"` extends Literal
-         }
        }
      }
+
   """|## Custom
      |
      |This trait is not used by the library. But since `Element` is sealed, you can use this
