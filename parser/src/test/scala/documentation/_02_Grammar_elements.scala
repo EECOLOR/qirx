@@ -98,57 +98,51 @@ object _02_Grammar_elements extends Documentation {
      |We have devided the types of terminals into two categories
      | """.stripMargin - {
 
-    """|### Free
+    """|### Variable
        |
        |This marks the terminal as being able to accept an arbitrary set of characters.
        | """.stripMargin - {
 
-         "An example" - sideEffectExample {
+      """|#### Free
+         |
+         |This marks the terminal as capturing an abitrary set of characters
+         | """.stripMargin - sideEffectExample {
            case object Id extends Free
-         }
 
+           Id must be[Variable with Capture[String]]
+         }
       """|#### Scrap
          |
          |This marks the terminal as being able to accept an arbitrary set of characters, but
          |they are not of any value.
          | """.stripMargin - sideEffectExample {
            case object Whitespace extends Scrap
+
+           Whitespace must be[Variable with Capture[Unit]]
          }
        }
 
-    """|### NonFree
+    """|### Fixed
        |
        |This marks the terminal as being able to accept a fixed set of characters.
        | """.stripMargin - {
 
       """|#### Keyword
          |
-         |Use this to mark a terminal as a keyword
+         |Use this to mark a terminal as a keyword, not capturing anything
          | """.stripMargin - sideEffectExample {
            case object `keyword` extends Keyword
+
+           `keyword` must be[Fixed with Capture[Unit]]
          }
 
       """|#### Feature
          |
-         |Use this to mark a terminal as a feature
+         |Use this to mark a terminal as a feature, capturing the object itself
          | """.stripMargin - sideEffectExample {
            case object `feature` extends Feature
-         }
 
-      """|#### Group markers
-         |
-         |Some terminals are used to create groups. You can mark these as the start or end of a
-         |group.
-         | """.stripMargin - sideEffectExample {
-           case object `(` extends GroupMarker
-           case object `)` extends GroupMarker
-         }
-
-      """|#### Separator
-         |
-         |This marks the terminal as being a separator.
-         | """.stripMargin - sideEffectExample {
-           case object `,` extends Separator
+           `feature` must be[Fixed with Capture[Capture.Self]]
          }
        }
      }

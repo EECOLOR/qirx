@@ -18,10 +18,10 @@ object ProductionSpecification extends Documentation {
     object TestGrammar extends Grammar {
 
       // This is about compiling, no need to provide real values
-      def freeCharacters = null
-      def nonFreeStrings = null
+      def variableCharacters = null
+      def fixedStrings = null
 
-      trait CustomFeature extends Feature
+      trait CustomFeature extends Fixed with Capture[Capture.Self]
       object ast {
         case class CombinedValue(
           a: String,
@@ -39,18 +39,18 @@ object ProductionSpecification extends Documentation {
       object ViewValue     extends Nonterminal[View[String]]
       object CombinedValue extends Nonterminal[ast.CombinedValue]
 
-      val nonFree: NonFree = null
-      val free: Free = null
-      val scrap: Scrap = null
+      val fixedUnit: Fixed with Capture[Unit] = null
+      val variableString: Variable with Capture[String] = null
+      val variableUnit: Variable with Capture[Unit] = null
       val customFeature: CustomFeature = null
 
-      UnitValue     := scrap | nonFree | nonFree.? | nonFree.+ | nonFree.* | nonFree ~ nonFree | UnitValue
-      StringValue   := free | !nonFree | nonFree ~ free | StringValue
+      UnitValue     := variableUnit | fixedUnit | fixedUnit.? | fixedUnit.+ | fixedUnit.* | fixedUnit ~ fixedUnit | UnitValue
+      StringValue   := variableString | !fixedUnit | fixedUnit ~ variableString | StringValue
       CustomFeature := customFeature | CustomFeature
-      OptionValue   := free.? | OptionValue
-      ViewValue     := free.+ | free.*
+      OptionValue   := variableString.? | OptionValue
+      ViewValue     := variableString.+ | variableString.*
       ViewValue     := ViewValue
-      ViewValue     := free ~ free.*
+      ViewValue     := variableString ~ variableString.*
       CombinedValue := StringValue ~ CustomFeature ~ OptionValue ~ ViewValue ~ CombinedValue
       CombinedValue := CombinedValue
     }

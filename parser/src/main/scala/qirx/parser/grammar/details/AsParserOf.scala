@@ -15,45 +15,42 @@ trait AsParserOf[-E <: Element, O] {
   def apply(e:E):Parser[O]
 }
 
-trait LowerPriorityAsParserOf {
-
-  protected def characterParserFor[A](
-    characters : ExSet[Char],
-    toValue    : InvariantView[Char] with HasPreciseSize => A
-  ): Parser[A] =
-    CharacterParser(_ span characters toOutcome s"Expected one of $characters", toValue)
-
-  implicit def nonFree(
-    implicit nonFreeStrings: Translate[NonFree, String]
-  ) =
-    new (NonFree AsParserOf Unit) {
-      def apply(e: NonFree) = CharacterParser.string(nonFreeStrings(e), _ => ())
-    }
-
-  implicit def free(
-    implicit freeCharacters : Translate[Free, ExSet[Char]]
-  ) =
-    new (Free AsParserOf String) {
-      def apply(e: Free) = characterParserFor(freeCharacters(e), _.force)
-    }
-}
-
-object AsParserOf extends LowerPriorityAsParserOf {
+object AsParserOf {
 
   import utilities._
 
-  implicit def scrap(
-    implicit freeCharacters : Translate[Free, ExSet[Char]]
+  private def characterParserFor[A](
+    characters : ExSet[Char],
+    toValue    : InvariantView[Char] with HasPreciseSize => A
+  ): Parser[A] =
+    CharacterParser(_ span characters toOutcome s"Expected one of ${characters mkString ""}", toValue)
+
+  implicit def variableString(
+    implicit variableCharacters : Translate[Variable, ExSet[Char]]
   ) =
-    new (Scrap AsParserOf Unit) {
-      def apply(e: Scrap) = characterParserFor(freeCharacters(e), _ => ())
+    new ((Variable with Capture[String]) AsParserOf String) {
+      def apply(e: Variable with Capture[String]) = characterParserFor(variableCharacters(e), _.force)
     }
 
-  implicit def feature[T <: Feature](
-    implicit nonFreeStrings : Translate[Feature, String]
+  implicit def variableUnit(
+    implicit variableCharacters : Translate[Variable, ExSet[Char]]
+  ) =
+    new ((Variable with Capture[Unit]) AsParserOf Unit) {
+      def apply(e: Variable with Capture[Unit]) = characterParserFor(variableCharacters(e), _ => ())
+    }
+
+  implicit def fixedUnit(
+    implicit fixedStrings: Translate[Fixed, String]
+  ) =
+    new ((Fixed with Capture[Unit]) AsParserOf Unit) {
+      def apply(e: Fixed with Capture[Unit]) = CharacterParser.string(fixedStrings(e), _ => ())
+    }
+
+  implicit def fixedSelf[T <: Fixed with Capture[Capture.Self]](
+    implicit fixedStrings : Translate[Fixed, String]
   ) =
     new (T AsParserOf T) {
-      def apply(e: T) = CharacterParser.string(nonFreeStrings(e), _ => e)
+      def apply(e: T) = CharacterParser.string(fixedStrings(e), _ => e)
     }
 
   implicit def nonterminal[T](

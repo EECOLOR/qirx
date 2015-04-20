@@ -102,10 +102,10 @@ object _04_Grammar extends Documentation {
      |
      |Next up are the terminals.
      | """.stripMargin -- new Example {
-       case object `(` extends GroupMarker
-       case object `)` extends GroupMarker
-       case object `,` extends Separator
-       case object `"` extends GroupMarker // "
+       case object `(` extends Keyword
+       case object `)` extends Keyword
+       case object `,` extends Keyword
+       case object `"` extends Keyword // "
 
        case object `call`     extends Keyword
        case object `special`  extends Feature
@@ -126,7 +126,7 @@ object _04_Grammar extends Documentation {
      | """.stripMargin -- new Example {
        object translations {
 
-         val nonFreeStrings: ExMap[NonFree, String] = Direct(
+         val fixedStrings: ExMap[Fixed, String] = Direct(
            `call`    -> "call",
            `special` -> "special",
            `normal`  -> "normal",
@@ -136,7 +136,7 @@ object _04_Grammar extends Documentation {
            `"` -> "\""
          ).toExMap
 
-         val freeCharacters: ExMap[Free, ExSet[Char]] = Direct(
+         val variableCharacters: ExMap[Variable, ExSet[Char]] = Direct(
            Id         -> ExSet('a' to 'z'),
            Numeric    -> ExSet('0' to '9'),
            Whitespace -> ExSet(Direct(' ', '\t'))
@@ -192,8 +192,8 @@ object _04_Grammar extends Documentation {
        object grammar extends Grammar {
 
          // You could add these using a trait if you wanted to keep the noise out of the grammar
-         val nonFreeStrings = translations.nonFreeStrings
-         val freeCharacters = translations.freeCharacters
+         val fixedStrings = translations.fixedStrings
+         val variableCharacters = translations.variableCharacters
 
          // import the customizations to make sure they have highest precedence
          import whitespaceHandling._

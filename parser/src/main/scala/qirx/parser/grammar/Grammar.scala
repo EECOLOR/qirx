@@ -9,8 +9,8 @@ import qirx.parser.grammar.details.Translate
 
 trait Grammar {
 
-  def freeCharacters: ExMap[Free, ExSet[Char]]
-  def nonFreeStrings: ExMap[NonFree, String]
+  def variableCharacters: ExMap[Variable, ExSet[Char]]
+  def fixedStrings: ExMap[Fixed, String]
 
   // This mutable construction was chosen to allow more freedom when defining productions. If
   // we were to make this an abstract class and passed in the methods through the constructor
@@ -50,11 +50,11 @@ trait Grammar {
   private case class Production[T](val nonterminal:Nonterminal[T], parser: Parser[T])
 
   // The following implicits are required to make the construction of parsers possible
-  protected implicit lazy val freeTranslation: Translate[Free, ExSet[Char]] = new Translate(
-    free => freeCharacters.get(free) getOrElse abort("Could not find characters for " + free)
+  protected implicit lazy val freeTranslation: Translate[Variable, ExSet[Char]] = new Translate(
+    variable => variableCharacters.get(variable) getOrElse abort("Could not find characters for " + variable)
   )
-  protected implicit lazy val nonFreeTranslation: Translate[NonFree, String] = new Translate(
-    nonFree => nonFreeStrings.get(nonFree) getOrElse abort("Could not find string for " + nonFree)
+  protected implicit lazy val nonFreeTranslation: Translate[Fixed, String] = new Translate(
+    fixed => fixedStrings.get(fixed) getOrElse abort("Could not find string for " + fixed)
   )
   protected implicit def nonterminalTranslation[T]:Translate[Nonterminal[T], Parser[T]] = new Translate(
     nonterminal => parserFor(nonterminal) getOrElse abort("Could not find parser for " + nonterminal)

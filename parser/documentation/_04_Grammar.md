@@ -78,10 +78,10 @@ case object Number     extends Nonterminal[ast.NumberValue]
 Next up are the terminals.
  
 ```scala
-case object `(` extends GroupMarker
-case object `)` extends GroupMarker
-case object `,` extends Separator
-case object `"` extends GroupMarker // "
+case object `(` extends Keyword
+case object `)` extends Keyword
+case object `,` extends Keyword
+case object `"` extends Keyword // "
 
 case object `call`     extends Keyword
 case object `special`  extends Feature
@@ -100,7 +100,7 @@ grammar: the translation of characters to terminals.
 ```scala
 object translations {
 
-  val nonFreeStrings: ExMap[NonFree, String] = Direct(
+  val fixedStrings: ExMap[Fixed, String] = Direct(
     `call`    -> "call",
     `special` -> "special",
     `normal`  -> "normal",
@@ -110,7 +110,7 @@ object translations {
     `"` -> "\""
   ).toExMap
 
-  val freeCharacters: ExMap[Free, ExSet[Char]] = Direct(
+  val variableCharacters: ExMap[Variable, ExSet[Char]] = Direct(
     Id         -> ExSet('a' to 'z'),
     Numeric    -> ExSet('0' to '9'),
     Whitespace -> ExSet(Direct(' ', '\t'))
@@ -160,8 +160,8 @@ way. As a bonus, when we define a production, we will get a parser for free.
 object grammar extends Grammar {
 
   // You could add these using a trait if you wanted to keep the noise out of the grammar
-  val nonFreeStrings = translations.nonFreeStrings
-  val freeCharacters = translations.freeCharacters
+  val fixedStrings = translations.fixedStrings
+  val variableCharacters = translations.variableCharacters
 
   // import the customizations to make sure they have highest precedence
   import whitespaceHandling._

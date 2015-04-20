@@ -77,13 +77,18 @@ set of characters are written with standard convention.
 
 We have devided the types of terminals into two categories
  
-### Free
+### Variable
 
 This marks the terminal as being able to accept an arbitrary set of characters.
  
-An example
+#### Free
+
+This marks the terminal as capturing an abitrary set of characters
+ 
 ```scala
 case object Id extends Free
+
+Id must be[Variable with Capture[String]]
 ```
 #### Scrap
 
@@ -92,38 +97,28 @@ they are not of any value.
  
 ```scala
 case object Whitespace extends Scrap
+
+Whitespace must be[Variable with Capture[Unit]]
 ```
-### NonFree
+### Fixed
 
 This marks the terminal as being able to accept a fixed set of characters.
  
 #### Keyword
 
-Use this to mark a terminal as a keyword
+Use this to mark a terminal as a keyword, not capturing anything
  
 ```scala
 case object `keyword` extends Keyword
+
+`keyword` must be[Fixed with Capture[Unit]]
 ```
 #### Feature
 
-Use this to mark a terminal as a feature
+Use this to mark a terminal as a feature, capturing the object itself
  
 ```scala
 case object `feature` extends Feature
-```
-#### Group markers
 
-Some terminals are used to create groups. You can mark these as the start or end of a
-group.
- 
-```scala
-case object `(` extends GroupMarker
-case object `)` extends GroupMarker
-```
-#### Separator
-
-This marks the terminal as being a separator.
- 
-```scala
-case object `,` extends Separator
+`feature` must be[Fixed with Capture[Capture.Self]]
 ```
