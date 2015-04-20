@@ -122,7 +122,7 @@ object _04_Grammar extends Documentation {
      |
      |Although we have all of the building blocks we need, there is still one thing
      |missing that is required to build a fully functional parser from a given
-     |grammar: the translation of characters to terminals.
+     |grammar: the translation of terminals to characters.
      | """.stripMargin -- new Example {
        object translations {
 
@@ -161,11 +161,6 @@ object _04_Grammar extends Documentation {
            TransformedTo.forContext[X] { (i: H1 :: T1) =>
              Whitespace.? :: transformHead(i.head) :: transformTail(i.tail)
            }
-
-         // Note that the current Scala compiler requires us to add return types to the
-         // implicit methods because we import these definitions later on. In a perfect
-         // world that should not be necessary because we do not add anything to the
-         // signature of the trait we implement.
        }
      } chain { whitespace =>
 
@@ -220,11 +215,11 @@ object _04_Grammar extends Documentation {
      |The above grammar has produced parsers that are useful for us. These are the parsers of
      |nonterminals and with that our AST.
      | """.stripMargin -- new Example {
-       val Some(statementParser  : Parser[ast.Statement  ]) = grammar parserFor Statement
-       val Some(callTypeParser   : Parser[ast.CallType   ]) = grammar parserFor CallType
-       val Some(expressionParser : Parser[ast.Expression ]) = grammar parserFor Expression
-       val Some(stringParser     : Parser[ast.StringValue]) = grammar parserFor String
-       val Some(numberParser     : Parser[ast.NumberValue]) = grammar parserFor Number
+       val statementParser  : Parser[ast.Statement  ] = grammar parserFor Statement
+       val callTypeParser   : Parser[ast.CallType   ] = grammar parserFor CallType
+       val expressionParser : Parser[ast.Expression ] = grammar parserFor Expression
+       val stringParser     : Parser[ast.StringValue] = grammar parserFor String
+       val numberParser     : Parser[ast.NumberValue] = grammar parserFor Number
      } chain { parsers =>
 
      import parsers.statementParser

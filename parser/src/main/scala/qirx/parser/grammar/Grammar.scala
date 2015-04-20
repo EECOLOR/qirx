@@ -21,11 +21,12 @@ trait Grammar {
   private implicit def productionEq = HashEq.natural[Production[_]]
   private var _productions = emptyValue[ExSet[Production[_]]]
 
-  def parserFor[T](nonterminal: Nonterminal[T]):Option[Parser[T]] =
+  def parserFor[T](nonterminal: Nonterminal[T]):Parser[T] =
     _productions
       .find(_.nonterminal == nonterminal)
       // Production binds the types of terminal and parser, this allows us to do a safe cast
       .map(_.parser.asInstanceOf[Parser[T]])
+      .getOrElse(abort(s"You have not defined a parser for $nonterminal"))
 
   protected implicit class NonterminalOperations[N, R](nonterminal: N) {
     def := [E <: Element, F <: Element, T](element: E)(
@@ -60,6 +61,6 @@ trait Grammar {
     fixed => fixedStrings.get(fixed) getOrElse abort("Could not find string for " + fixed)
   )
   protected implicit def nonterminalTranslation[T]:Translate[Nonterminal[T], Parser[T]] = new Translate(
-    nonterminal => parserFor(nonterminal) getOrElse abort("Could not find parser for " + nonterminal)
+    nonterminal => parserFor(nonterminal)
   )
 }

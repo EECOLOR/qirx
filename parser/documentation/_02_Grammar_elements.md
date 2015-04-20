@@ -8,6 +8,7 @@ The elements in a grammar can be roughly devided into 3 categories:
 1. Parser instructions
 2. Nonterminals
 3. Terminals
+4. Custom
  
 ## Parser instructions
 
@@ -121,4 +122,12 @@ Use this to mark a terminal as a feature, capturing the object itself
 case object `feature` extends Feature
 
 `feature` must be[Fixed with Capture[Capture.Self]]
+```
+## Custom
+
+This trait is not used by the library. But since `Element` is sealed, you can use this
+to create your own and hook into the available features.
+ 
+```scala
+case object CustomElement extends Custom
 ```
