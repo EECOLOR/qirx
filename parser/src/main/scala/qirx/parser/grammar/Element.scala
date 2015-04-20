@@ -11,6 +11,8 @@ sealed trait Element extends NaturalHashEq
 
 object Element extends ElementOperations
 
+trait Custom extends Element
+
 case class Sequence[+E <: HList](elements: E)(implicit ev: E ContainsSubTypesOf Element) extends Element
 
 case class Choice[+E <: HList](options: E)(implicit ev: E ContainsSubTypesOf Element) extends Element

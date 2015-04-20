@@ -15,6 +15,7 @@ object _02_Grammar_elements extends Documentation {
    |1. Parser instructions
    |2. Nonterminals
    |3. Terminals
+   |4. Custom
    | """.stripMargin - {
 
   """|## Parser instructions
@@ -145,6 +146,13 @@ object _02_Grammar_elements extends Documentation {
            `feature` must be[Fixed with Capture[Capture.Self]]
          }
        }
+     }
+  """|## Custom
+     |
+     |This trait is not used by the library. But since `Element` is sealed, you can use this
+     |to create your own and hook into the available features.
+     | """.stripMargin - sideEffectExample {
+       case object CustomElement extends Custom
      }
    }
 }
