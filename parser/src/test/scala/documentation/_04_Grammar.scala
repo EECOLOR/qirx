@@ -149,17 +149,17 @@ object _04_Grammar extends Documentation {
      |The last thing we add is some whitespace handling.
      | """.stripMargin -- new Example {
        object whitespaceHandling {
+         import nonterminals.Statement
 
-         implicit def whitespaceHNil: (HNil TransformedTo (ZeroOrOne[Scrap] :: HNil)) =
-           new (HNil TransformedTo (ZeroOrOne[Scrap] :: HNil)) {
-             def apply(i: HNil) = Whitespace.? :: i
-           }
+         implicit def whitespaceHNil[X <: Statement.type] =
+           TransformedTo.forContext[X]((i: HNil) => Whitespace.? :: i)
 
-         implicit def whitespaceHList[H, T <: HList, O <: HList](
-           implicit transformTail: T TransformedTo O
-         ): ((H :: T) TransformedTo (ZeroOrOne[Scrap] :: H :: O)) =
-           new ((H :: T) TransformedTo (ZeroOrOne[Scrap] :: H :: O)) {
-             def apply(i: H :: T) = Whitespace.? :: i.head :: transformTail(i.tail)
+         implicit def whitespaceHList[X <: Statement.type, H1, H2, T1 <: HList, T2 <: HList](
+           implicit transformHead: (H1 TransformedTo H2)#InContext[X],
+                    transformTail: (T1 TransformedTo T2)#InContext[X]
+         ) =
+           TransformedTo.forContext[X] { (i: H1 :: T1) =>
+             Whitespace.? :: transformHead(i.head) :: transformTail(i.tail)
            }
 
          // Note that the current Scala compiler requires us to add return types to the
@@ -176,8 +176,9 @@ object _04_Grammar extends Documentation {
      import terminals._
 
   """|Note that this seems quite a compilated way of handling whitespace. The mechanism is
-     |however not designed specifically for whitespace. It allows you to modify a sequence
-     |of elements before we turn it into parsers.
+     |however not designed specifically for whitespace. It allows you to modify any element
+     |before we turn it into a parser. On top of that, it's context sensitive: you can scope
+     |it to nonterminals.
      |
      |This mechanisme allows you to keep your grammar clear of any stuff that could be
      |considered noise. Whitespace is such an example. A reader of my grammar intuitively
@@ -236,7 +237,7 @@ object _04_Grammar extends Documentation {
      |
      |Lets see the fruits of our labor.
      | """.stripMargin - example {
-       val result =  statementParser parse """  call special  test("test1" ,  "test2",12) """
+       val result =  statementParser parse """  call special  test(" test1 " ,  "test2",12) """
 
        result match {
          case Failed(cause) => failure(cause.toString)
@@ -250,14 +251,14 @@ object _04_Grammar extends Documentation {
 
            val expressions = statement.expressions.toDirect
            expressions.to_s is Direct(
-             ast.StringValue("test1"),
+             ast.StringValue(" test1 "),
              ast.StringValue("test2"),
              ast.NumberValue(12)
            ).to_s
 
-           expressions(Index(0)).position is Position(22, 27)
-           expressions(Index(1)).position is Position(33, 38)
-           expressions(Index(2)).position is Position(40, 42)
+           expressions(Index(0)).position is Position(22, 29)
+           expressions(Index(1)).position is Position(35, 40)
+           expressions(Index(2)).position is Position(42, 44)
 
          case Succeeded(results) => failure("Expected a single result, got " + results.size + " results")
        }

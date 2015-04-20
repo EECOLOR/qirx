@@ -6,6 +6,7 @@ import psp.std._
 import qirx.parser.grammar.details.AsParserOf
 import qirx.parser.grammar.details.Constructor
 import qirx.parser.grammar.details.Translate
+import qirx.parser.grammar.details.TransformedTo
 
 trait Grammar {
 
@@ -26,14 +27,16 @@ trait Grammar {
       // Production binds the types of terminal and parser, this allows us to do a safe cast
       .map(_.parser.asInstanceOf[Parser[T]])
 
-  protected implicit class NonterminalOperations[R](nonterminal: Nonterminal[R]) {
-    def := [E <: Element, T](element: E)(
-      implicit asParser    : E AsParserOf T,
-               constructor : Constructor[T, R]
+  protected implicit class NonterminalOperations[N, R](nonterminal: N) {
+    def := [E <: Element, F <: Element, T](element: E)(
+      implicit asNonterminal : N => Nonterminal[R],
+               customize     : (E TransformedTo F)#InContext[N],
+               asParser      : F AsParserOf T,
+               constructor   : Constructor[T, R]
     ): Unit = {
 
       object ConstructingParser extends Parser[R] {
-        lazy val underlying = asParser(element)
+        lazy val underlying = element |> customize |> asParser
 
         def parse(input: Input) =
           underlying parse input mapResult {

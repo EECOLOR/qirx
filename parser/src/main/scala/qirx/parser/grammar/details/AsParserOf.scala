@@ -11,7 +11,7 @@ import qirx.parser.Parser
 import qirx.parser.parsers._
 import qirx.parser.Failure
 
-trait AsParserOf[-E <: Element, O] {
+trait AsParserOf[-E <: Element, O] extends (E => Parser[O]) {
   def apply(e:E):Parser[O]
 }
 
@@ -93,9 +93,8 @@ object AsParserOf {
 
   import SequenceParser.ParsesTo
 
-  implicit def sequence[E <: HList, F <: HList, H, T <: HList, A <: HList, B <: HList, C, D](
-    implicit constomize    : E TransformedTo F,
-             asParsers     : F AsParserList (H :: T),
+  implicit def sequence[E <: HList, H, T <: HList, A <: HList, B <: HList, C, D](
+    implicit asParsers     : E AsParserList (H :: T),
              parse         : (H :: T) ParsesTo A,
              withoutUnit   : A WithoutUnitAs B,
              normalize     : B NormalizedAs C,
@@ -105,7 +104,7 @@ object AsParserOf {
       def apply(e: Sequence[E]) = {
         val parser =
           SequenceParser(
-            e.elements |> constomize |> asParsers,
+            e.elements |> asParsers,
             withoutUnit andThen normalize
           )
 

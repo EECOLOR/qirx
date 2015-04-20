@@ -58,6 +58,43 @@ object ProductionSpecification extends Documentation {
     success
   }
 
+  "Customization helpers" - {
+    trait Test extends Scrap
+    object Test extends Test
+    trait Test2 extends Scrap
+    object Test2 extends Test2
+
+    implicit def transformSingle[X]: (Test TransformedTo Test2)#InContext[X] =
+      new (Test TransformedTo Test2) {
+        def apply(i: Test) = null
+      }.InContext[X]
+
+    val zeroOrMore = implicitly[(ZeroOrMore[Test] TransformedTo ZeroOrMore[Test2])#InContext[Any]]
+    zeroOrMore(Test.*) is ZeroOrMore(null)
+
+    val oneOrMore = implicitly[(OneOrMore[Test] TransformedTo OneOrMore[Test2])#InContext[Any]]
+    oneOrMore(Test.+) is OneOrMore(null)
+
+    val zeroOrOne = implicitly[(ZeroOrOne[Test] TransformedTo ZeroOrOne[Test2])#InContext[Any]]
+    zeroOrOne(Test.?) is ZeroOrOne(null)
+
+    val not = implicitly[(Not[Test] TransformedTo Not[Test2])#InContext[Any]]
+    not(!Test) is Not(null)
+
+    implicit def transformHList[X](
+      implicit transform: (Test TransformedTo Test2)#InContext[X]
+    ): ((Test :: HNil) TransformedTo (Test2 :: HNil))#InContext[X] =
+      new ((Test :: HNil) TransformedTo (Test2 :: HNil)) {
+        def apply(i: Test :: HNil) = transform(i.head) :: HNil
+      }.InContext[X]
+
+    val sequence = implicitly[(Sequence[Test :: HNil] TransformedTo Sequence[Test2 :: HNil])#InContext[Any]]
+    sequence(Sequence(Test :: HNil)) is Sequence(null :: HNil)
+
+    val choice = implicitly[(Choice[Test :: HNil] TransformedTo Choice[Test2 :: HNil])#InContext[Any]]
+    choice(Choice(Test :: HNil)) is Choice(null :: HNil)
+  }
+
   "Unit tests for the stuff that deals with results" - {
 
      trait CustomType1
