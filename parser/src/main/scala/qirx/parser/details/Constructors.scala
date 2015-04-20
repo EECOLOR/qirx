@@ -15,8 +15,8 @@ trait Constructors {
   def emptySuccess[A](value: A, input:Input): Failure | View[Result[A]] =
     Succeeded(Direct(emptyResult(value, input)))
 
-  def success[A](consumed: Input, remaining: Input,  toValue: InvariantView[Char] with HasPreciseSize => A): Failure | View[Result[A]] =
-    Succeeded(Direct(Result(toValue(consumed.underlying), Position(consumed.position, remaining.position), remaining)))
+  def success[A](start: Long, consumed: InvariantView[Char] with HasPreciseSize, remaining: Input,  toValue: InvariantView[Char] with HasPreciseSize => A): Failure | View[Result[A]] =
+    Succeeded(Direct(Result(toValue(consumed), Position(start, remaining.position), remaining)))
 
   def emptyResult[A](value: A, input: Input): Result[A] =
     Result(value, Position(input.position, input.position), input)

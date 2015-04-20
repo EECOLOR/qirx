@@ -1,9 +1,8 @@
 package qirx.parser.details
 
-import psp.api.Precise
-import psp.api.InvariantView
-import psp.api.HasPreciseSize
+import psp.api._
 import psp.std._
+import psp.std.StdEq._
 import qirx.parser.Input
 
 trait InputOperations {
@@ -37,5 +36,8 @@ trait InputOperations {
 
     def splitAt(index: Precise): SplitInput =
       SplitInput(take(index), drop(index))
+
+    def startsWith(value: InvariantView[Char] with HasPreciseSize): Boolean =
+      underlying.take(value.size).force === value.force
   }
 }

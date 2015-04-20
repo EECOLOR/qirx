@@ -17,7 +17,7 @@ case class CharacterParser[A](
     if (input.isEmpty) failure(ExpectedInput(input))
     else {
       consume(input).fold(
-        ifConsumed = success(_, _, toValue),
+        ifConsumed = success(input.position, _, _, toValue),
         ifRejected = message => failure(InvalidInput(input, message))
       )
     }
@@ -25,14 +25,12 @@ case class CharacterParser[A](
 
 object CharacterParser {
 
-  def string[A](value: View[Char] with HasPreciseSize, toValue: String => A): CharacterParser[A] = {
+  def string[A](value: InvariantView[Char] with HasPreciseSize, toValue: String => A): CharacterParser[A] = {
     val size = value.size
-    val expected = value.force
     CharacterParser(
       consume = { input =>
-        val consumed = input.take(size)
-        if (consumed.underlying.force == expected) Consumed(consumed, input.drop(size))
-        else Rejected(s"Expected `${value.force}`, got `${consumed.underlying.force[String]}`")
+        if (input startsWith value) Consumed(value, input.drop(size))
+        else Rejected(s"Expected `${value.force}`, got `${input.take(size).underlying.force[String]}`")
       },
       toValue = toValue compose (_.force)
     )

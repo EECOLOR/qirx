@@ -93,7 +93,7 @@ Below a parser that is set up for ambiguity.
 ```scala
 def takeExactly3(input: Input): Outcome = {
   val SplitInput(consumed, remaining) = input.splitAt(Precise(3))
-  if (consumed.size == Size(3)) Consumed(consumed, remaining)
+  if (consumed.size == Size(3)) Consumed(consumed.underlying, remaining)
   else Rejected(s"Expected exactly 3 characters, got ${consumed.size}")
 }
 

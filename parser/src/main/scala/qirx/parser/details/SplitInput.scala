@@ -7,5 +7,5 @@ case class SplitInput(consumed: Input, remaining: Input) {
 
   def toOutcome(ifRejected: => String): Outcome =
     if (consumed.isEmpty) Rejected(ifRejected)
-    else Consumed(consumed, remaining)
+    else Consumed(consumed.underlying, remaining)
 }

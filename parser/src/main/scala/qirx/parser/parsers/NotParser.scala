@@ -30,7 +30,7 @@ case class NotParser[A](
             )
         }
 
-      success(consumed, remaining, toValue)
+      success(input.position, consumed.underlying, remaining, toValue)
     }
   }
 }
