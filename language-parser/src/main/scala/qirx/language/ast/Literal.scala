@@ -1,10 +1,20 @@
-package qirx.language.ast
+package qirx.language
+package ast
 
 import psp.std.Option
 import psp.std.String
 import qirx.parser.grammar.Positioned
 
-sealed trait Numeric extends Positioned
+sealed trait Literal extends Positioned
+
+// This is not an object because we want to be able to record it's position
+case class NullValue() extends Literal
+
+case class CharValue(value: String) extends Literal
+case class StringValue(value: String) extends Literal
+case class BooleanValue(value: BooleanFeature) extends Literal
+
+sealed trait Numeric extends Literal
 case class Decimal(
   integerPart: String,
   fractionalPart: Option[String]
@@ -17,4 +27,3 @@ case class Decimal(
    */
 }
 case class Hex(value: String) extends Numeric
-
