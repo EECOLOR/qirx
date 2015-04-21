@@ -33,6 +33,7 @@ object ProductionSpecification extends Documentation {
       }
 
       object UnitValue     extends Nonterminal[Unit]
+      object CharValue     extends Nonterminal[Char]
       object StringValue   extends Nonterminal[String]
       object CustomFeature extends Nonterminal[CustomFeature]
       object OptionValue   extends Nonterminal[Option[String]]
@@ -45,7 +46,9 @@ object ProductionSpecification extends Documentation {
       val customFeature: CustomFeature = null
 
       UnitValue     := variableUnit | fixedUnit | fixedUnit.? | fixedUnit.+ | fixedUnit.* | fixedUnit ~ fixedUnit | UnitValue
-      StringValue   := variableString | !fixedUnit | fixedUnit ~ variableString | StringValue
+      CharValue     := !variableUnit
+      StringValue   := variableString | fixedUnit ~ variableString | StringValue
+      StringValue   := (!fixedUnit).*
       CustomFeature := customFeature | CustomFeature
       OptionValue   := variableString.? | OptionValue
       ViewValue     := variableString.+ | variableString.*

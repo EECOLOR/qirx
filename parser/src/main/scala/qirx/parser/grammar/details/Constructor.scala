@@ -38,6 +38,15 @@ object Constructor {
         result.value map constructor
     }
 
+  implicit def viewAsString[A](
+    implicit constructor: Constructor[String, A]
+  ) =
+    new Constructor[View[Result[Char]], A] {
+      def apply(result: Result[View[Result[Char]]]) =
+        result.map(_.map(_.value).force) |> constructor
+    }
+
+
   implicit def hlistPattern[A <: HList, B <: HList, C](
     implicit simplified  : A SimplifiedAs B,
              alignedTo   : B AlignedTo (C :: HNil),

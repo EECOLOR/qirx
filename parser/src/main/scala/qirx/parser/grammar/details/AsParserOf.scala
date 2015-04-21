@@ -63,8 +63,8 @@ object AsParserOf {
   implicit def not[A <: Element, B](
     implicit asParser    : A AsParserOf B
   ) =
-    new (Not[A] AsParserOf String) {
-      def apply(e: Not[A]) = NotParser(asParser(e.element), _.force)
+    new (Not[A] AsParserOf Char) {
+      def apply(e: Not[A]) = NotParser(asParser(e.element), identity)
     }
 
   implicit def zeroOrOne [A <: Element, B, C](

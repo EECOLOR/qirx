@@ -217,7 +217,7 @@ object _03_Parsers extends Documentation {
        parser parse "abcabc"  must beResult((( "abc", Position(0, 3), "abc") :: ("abc", Position(3, 6), "") :: HNil) -> (6 -> ""))
      }
 
-     var notParser: Parser[InvariantView[Char] with HasPreciseSize] = null
+     var notParser: Parser[Char] = null
 
   """|## Not parser
      |
@@ -229,24 +229,25 @@ object _03_Parsers extends Documentation {
        notParser =
          NotParser(
            underlying = CharacterParser.string("x", identity),
-           toValue    = identity[InvariantView[Char] with HasPreciseSize]
+           toValue    = identity[Char]
          )
      }
 
      def viewToString: View[Char] => String = _.force
 
      "- It will return a failure if the input is empty" - {
-       notParser parse "" mapValue viewToString must
+       notParser parse "" must
          beFailure[ExpectedInput](at = 0, input = "", message = expectedInputMessage)
      }
      "- It will not consume anything if the underlying parser consumed something" - {
-       notParser parse "x" mapValue viewToString must beResult("" -> (0 -> "x"))
+       notParser parse "x" must
+         beFailure[InvalidInput ](at = 0, input = "x", message = "Expected underlying parser to reject `x`, it consumed it")
      }
      "- It consumes if the underlying parser fails to do so" - {
-       notParser parse "yyy" mapValue viewToString must beResult("yyy" -> (3 -> ""))
+       notParser parse "y" must beResult('y' -> (1 -> ""))
      }
-     "- It stops consuming as soon as the underlying parser starts to consume\n " - {
-       notParser parse "yyyxxx" mapValue viewToString must beResult("yyy" -> (3 -> "xxx"))
+     "- It returns the correct remaining characters" - {
+       notParser parse "yy" must beResult('y' -> (1 -> "y"))
      }
 
      var zeroOrOneParser: Parser[Option[String]] = null

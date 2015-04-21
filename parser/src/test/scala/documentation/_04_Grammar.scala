@@ -198,7 +198,7 @@ object _04_Grammar extends Documentation {
          Statement  := `call` ~ CallType.? ~ Id ~ `(` ~ Expression ~ (`,` ~ Expression).* ~ `)`
          CallType   := `special` | `normal`
          Expression := String | Number
-         String     := `"` ~ !`"` ~ `"` // "
+         String     := `"` ~ (!`"`).* ~ `"` // "
          Number     := Numeric
        }
      } chain { grammarDefinition =>

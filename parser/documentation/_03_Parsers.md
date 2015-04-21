@@ -123,14 +123,13 @@ Below a parser that consumes anything but the `x` character.
 notParser =
   NotParser(
     underlying = CharacterParser.string("x", identity),
-    toValue    = identity[InvariantView[Char] with HasPreciseSize]
+    toValue    = identity[Char]
   )
 ```
 - It will return a failure if the input is empty
 - It will not consume anything if the underlying parser consumed something
 - It consumes if the underlying parser fails to do so
-- It stops consuming as soon as the underlying parser starts to consume
- 
+- It returns the correct remaining characters
 ## Zero or one parser
 
 This parser tries the underlying parser on the input

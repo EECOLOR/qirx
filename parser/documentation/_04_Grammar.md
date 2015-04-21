@@ -166,7 +166,7 @@ object grammar extends Grammar {
   Statement  := `call` ~ CallType.? ~ Id ~ `(` ~ Expression ~ (`,` ~ Expression).* ~ `)`
   CallType   := `special` | `normal`
   Expression := String | Number
-  String     := `"` ~ !`"` ~ `"` // "
+  String     := `"` ~ (!`"`).* ~ `"` // "
   Number     := Numeric
 }
 ```
