@@ -13,4 +13,11 @@ trait Constructors {
     new Constructor[`null`, ast.NullValue] {
       def apply(result: Result[`null`]) = result.map(_ => HNil) |> constructor
     }
+
+  implicit def underscore(
+    implicit constructor: Constructor[HNil, ast.Underscore]
+  ) =
+    new Constructor[`__`, ast.Underscore] {
+      def apply(result: Result[`__`]) = result.map(_ => HNil) |> constructor
+    }
 }

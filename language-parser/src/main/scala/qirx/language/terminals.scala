@@ -17,6 +17,9 @@ case object `false` extends BooleanFeature
 sealed trait `null` extends Feature
 case object `null` extends `null`
 
+sealed trait `__` extends Feature
+case object `__`  extends `__`
+
 // The current implementation of back ticks is not really what it needs to be
 case object `.`  extends Separator
 case object `"`  extends GroupMarker // "

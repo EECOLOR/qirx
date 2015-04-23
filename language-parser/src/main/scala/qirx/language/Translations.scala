@@ -18,6 +18,7 @@ trait Translations {
     `"`  -> "\"",
     `\\` -> "\\",
     `'`  -> "'",
+    `__`  -> "_",
 
     `true`  -> "true",
     `false` -> "false",

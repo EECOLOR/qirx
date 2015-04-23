@@ -3,6 +3,8 @@ package qirx.language
 import qirx.parser.grammar.Nonterminal
 
 
+case object Underscore extends Nonterminal[ast.Underscore]
+
 case object Literal extends Nonterminal[ast.Literal]
 
 case object Null extends Nonterminal[ast.NullValue]

@@ -61,4 +61,10 @@ object NonterminalSpecification extends GrammarSpecification {
     parser parse "true"     resultsIn ast.BooleanValue(`true`)
     parser parse "null"     resultsIn ast.NullValue()
   }
+
+  "Underscore" - {
+    val parser = grammar parserFor Underscore
+
+    parser parse "_" resultsIn ast.Underscore()
+  }
 }
