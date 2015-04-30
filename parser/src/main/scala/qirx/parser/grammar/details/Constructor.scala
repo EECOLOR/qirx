@@ -15,7 +15,22 @@ trait Constructor[-A, B] extends (Result[A] => B) {
   def apply(a:Result[A]):B
 }
 
-object Constructor {
+trait LowerPriorityConstructor {
+  import Constructor.exact
+  import Constructor.utilities._
+
+  implicit def hlistPattern[A <: HList, B <: HList, C](
+    implicit simplified  : A SimplifiedAs B,
+             alignedTo   : B AlignedTo (C :: HNil),
+             addPosition : AddPositionsTo[C]
+  ) =
+    new Constructor[A, C] {
+      def apply(result: Result[A]) =
+        result.map(_ |> simplified |> (_.head)) |> exact
+    }
+}
+
+object Constructor extends LowerPriorityConstructor {
 
   import utilities._
 
@@ -44,17 +59,6 @@ object Constructor {
     new Constructor[View[Result[Char]], A] {
       def apply(result: Result[View[Result[Char]]]) =
         result.map(_.map(_.value).force) |> constructor
-    }
-
-
-  implicit def hlistPattern[A <: HList, B <: HList, C](
-    implicit simplified  : A SimplifiedAs B,
-             alignedTo   : B AlignedTo (C :: HNil),
-             addPosition : AddPositionsTo[C]
-  ) =
-    new Constructor[A, C] {
-      def apply(result: Result[A]) =
-        result.map(_ |> simplified |> (_.head)) |> exact
     }
 
   implicit def caseClassLike[A, C <: HList, D <: HList, E <: HList, B](

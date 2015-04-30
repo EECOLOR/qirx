@@ -25,6 +25,8 @@ object ProductionSpecification extends Documentation {
 
       trait CustomFeature extends Fixed with Capture[Capture.Self]
       object ast {
+        case class SingleValue(value: String)
+
         case class CombinedValue(
           a: String,
           b: CustomFeature,
@@ -41,6 +43,7 @@ object ProductionSpecification extends Documentation {
       object OptionValue   extends Nonterminal[Option[String]]
       object ViewValue     extends Nonterminal[View[String]]
       object CombinedValue extends Nonterminal[ast.CombinedValue]
+      object SingleValue   extends Nonterminal[ast.SingleValue]
 
       val fixedUnit: Fixed with Capture[Unit] = null
       val variableString: Variable with Capture[String] = null
@@ -58,6 +61,8 @@ object ProductionSpecification extends Documentation {
       ViewValue     := variableString ~ variableString.*
       CombinedValue := StringValue ~ CustomFeature ~ OptionValue ~ ViewValue ~ CombinedValue
       CombinedValue := CombinedValue
+      SingleValue   := StringValue
+      SingleValue   := !fixedUnit ~ (!fixedUnit).*
     }
 
     success

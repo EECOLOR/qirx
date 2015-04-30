@@ -21,21 +21,21 @@ object NonterminalSpecification extends GrammarSpecification {
   "Numeric" - {
     val parser = grammar parserFor Numeric
 
-    parser parse "123" resultsIn ast.Decimal("123", None)
+    parser parse "123"       resultsIn ast.Decimal("123", None)
     parser parse "0x2F3AE26" resultsIn ast.Hex("2F3AE26")
   }
 
   "StringValue" - {
     val parser = grammar parserFor String
 
-    parser parse "\"test\"" resultsIn ast.StringValue("test")
+    parser parse "\"test\""     resultsIn ast.StringValue("test")
     parser parse "\"te\\\"st\"" resultsIn ast.StringValue("te\"st")
   }
 
   "CharValue" - {
     val parser = grammar parserFor Char
 
-    parser parse "'test'"   resultsIn ast.CharValue("test")
+    parser parse "'test'"    resultsIn ast.CharValue("test")
     parser parse "'te\\'st'" resultsIn ast.CharValue("te'st")
   }
 
@@ -66,5 +66,23 @@ object NonterminalSpecification extends GrammarSpecification {
     val parser = grammar parserFor Underscore
 
     parser parse "_" resultsIn ast.Underscore()
+  }
+
+  "Id" - {
+    val parser = grammar parserFor Id
+
+    val regularIds = Direct(
+      "x"  , "Object"  , "maxIndex"  , "dot_product_*", "__system" ,
+      "_y" , "empty_?" , "_MAX_LEN_" , "dot_*_product", "αρετη"    ,
+      "+"  , "p2p"     , "___x__#__" , "___x"         , "system__" ,
+      "__"
+    )
+
+    regularIds foreach { id =>
+      parser parse id resultsIn ast.RegularId(id) withMessage (s"Problem parsing '$id': " + _)
+    }
+
+    parser parse "`yield`" resultsIn ast.EscapedId("yield")
+    parser parse "`yie \\` ld`" resultsIn ast.EscapedId("yie ` ld")
   }
 }
